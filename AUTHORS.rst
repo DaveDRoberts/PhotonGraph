@@ -2,4 +2,4 @@
 Contributors
 ============
 
-* DXR355 <daveroberts1994@live.co.uk>
+* David D. Roberts <daveroberts1994@live.co.uk>

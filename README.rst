@@ -1,19 +1,15 @@
 ===========
-photongraph
+PhotonGraph
 ===========
 
-
-Add a short description here!
+PhotonGraph is a Python framework for simulating the logical output state of integrated photonic graph
+state generators. It includes tools for the analysis and applications of photonic graph states.
 
 
 Description
 ===========
 
-A longer description of your project goes here...
+A longer description of the project will be written here...
 
 
-Note
-====
 
-This project has been set up using PyScaffold 3.2.3. For details and usage
-information on PyScaffold see https://pyscaffold.org/.
