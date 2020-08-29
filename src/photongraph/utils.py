@@ -5,6 +5,7 @@ import scipy
 import thewalrus.quantum as twq
 from collections import defaultdict
 
+
 def cartesian_product(*iterable):
     """
     Performs a Cartesian product between all the elements of an arbitrary
@@ -58,7 +59,7 @@ def tensor(*matrices):
     return res
 
 
-def logical_basis(qudit_dim, qudit_num):
+def logical_basis(qudit_dim, qudit_num, rev=False):
     """
         Generates all of the logical basis states for a specific qudit
         dimension and number of qudits.
@@ -66,6 +67,7 @@ def logical_basis(qudit_dim, qudit_num):
         Args:
             qudit_dim (int): Qudit dimension
             qudit_num (int): Number of qudits
+            rev (bool): reverses the order of the binary bit strings
 
         Returns:
             (list): A list of tuples where each tuple is a basis state.
@@ -75,13 +77,20 @@ def logical_basis(qudit_dim, qudit_num):
         >>>logical_basis_states(2,2)
         [(0, 0), (0, 1), (1, 0), (1, 1)]
 
+        >>>logical_basis_states(2,2, True)
+        [(0, 0), (1, 0), (0, 1), (1, 1)]
+
         >>>logical_basis_states(4,1)
         [(0,), (1,), (2,), (3,)]
     """
-
-    return [tuple(np.array(list(''.join(i)), dtype=int))
-            for i in itertools.product(''.join(str(i)
-                for i in np.arange(qudit_dim)), repeat=qudit_num)]
+    if rev:
+        return [tuple(reversed(tuple(np.array(list(''.join(i)), dtype=int))))
+                for i in itertools.product(''.join(str(i)
+                        for i in np.arange(qudit_dim)), repeat=qudit_num)]
+    else:
+        return [tuple(np.array(list(''.join(i)), dtype=int))
+                for i in itertools.product(''.join(str(i)
+                        for i in np.arange(qudit_dim)), repeat=qudit_num)]
 
 
 def logical_fock_states(qudit_dim, qudit_num, photon_cutoff=1):
@@ -123,6 +132,7 @@ def logical_fock_states(qudit_dim, qudit_num, photon_cutoff=1):
      (1, 1): [(0, 1, 0, 1), (0, 1, 0, 2), (0, 2, 0, 1), (0, 2, 0, 2)]}
 
     """
+
     def check_input(param):
         """Checks if param is a non-zero integer."""
         assert isinstance(param, int)
@@ -217,7 +227,7 @@ def qudit_qubit_encoding(qudit_dim, qudit_num):
     """
 
     try:
-        assert (qudit_dim & (qudit_dim-1) == 0) and qudit_dim != 0
+        assert (qudit_dim & (qudit_dim - 1) == 0) and qudit_dim != 0
     except:
         raise AssertionError('Qudit dimension must be a power of 2.')
 
@@ -295,7 +305,7 @@ def loss_dB_to_eff(loss_dB):
         >>>loss_dB_to_eff(0)
         1
     """
-    return 10**(-0.1 * loss_dB)
+    return 10 ** (-0.1 * loss_dB)
 
 
 def efficiency_calc(loss_params):
@@ -389,49 +399,55 @@ def intra_qubit_gate_set(qudit_dim):
     Generate the logical qubit operations available for qubits encoded
     in a particular qudit dimension.
 
-    TODO: generate all possible combinations of targets and controls for controlled operations.
-    TODO: need tobe able to implement CZ between oadjacent qubits e.g. say we
-          have a 8D qudit which maps to 3 qubits, currently I can only
-          implement CZ_12 and CZ_23 but I also need to be able to do CZ_13.
     Args:
         qudit_dim (int): Qudit dimension
 
     Returns:
         dict: key=gate label, value=matrix (numpy.ndarray())
 
+
+
     Examples:
 
     """
-    qubit_gate_set = {}
+    try:
+        assert (qudit_dim & (qudit_dim - 1) == 0) and qudit_dim != 0
+    except:
+        raise AssertionError('Qudit dimension must be a power of 2.')
 
-    qubit_gate_set["H"] = (1 / np.sqrt(2)) * np.array([[1, 1], [1, -1]])
-    qubit_gate_set["I"] = np.array([[1, 0], [0, 1]])
-    qubit_gate_set["Z"] = np.array([[1, 0], [0, -1]])
-    qubit_gate_set["X"] = np.array([[0, 1], [1, 0]])
 
-    # below are the local operations for local complementation
-    qubit_gate_set["sqrtjZ"] = np.sqrt(1j) * np.array([[1, 0], [0, 1j]])
-    qubit_gate_set["sqrtjX"] = 0.5 * np.sqrt(-1j) * np.array(
-        [[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
+    qubit_num = int(np.log2(qudit_dim))
+    qubits = range(qubit_num)
 
-    # TODO rewrite the following into a for loop, so arbitrary dim gates can
-    # calculated.
+    # Single-qubit unitary operations
+    H = (1 / np.sqrt(2)) * np.array([[1, 1], [1, -1]])
+    I = np.array([[1, 0], [0, 1]])
+    X = np.array([[0, 1], [1, 0]])
+    Z = np.array([[1, 0], [0, -1]])
+    Y = 1j * X @ Z
+    S = np.array([[1, 0], [0, 1j]])
+    HS = H @ S
+    SH = S @ H
+    HSH = H @ S @ H
+    si_Z = np.sqrt(1j) * S
+    si_X = np.sqrt(-1j) * HSH
 
-    if qudit_dim > 2:
-        CNOT = np.eye(4)
-        CNOT[[-1, -2]] = CNOT[[-2, -1]]
-        qubit_gate_set["CNOT"] = CNOT
-        CZ = np.eye(4)
-        CZ[-1, -1] = -1
-        qubit_gate_set["CZ"] = CZ
+    qubit_gate_set = {"H": H, "I": I, "X": X, "Z": Z, "Y": Y, "S": S, "HS": HS,
+                      "SH": SH, "si_Z": si_Z, "si_X": si_X}
 
-    if qudit_dim > 4:
-        CCNOT = np.eye(8)
-        CCNOT[[-1, -2]] = CCNOT[[-2, -1]]
-        qubit_gate_set["CCNOT"] = CCNOT
-        CCZ = np.eye(8)
-        CCZ[-1, -1] = -1
-        qubit_gate_set["CCZ"] = CCZ
+    binary_bit_strings_rev = logical_basis(2, qubit_num, True)
+
+    for i in range(2, qubit_num + 1):
+        gate_qubit_combos = list(itertools.combinations(qubits, i))
+        for gqc in gate_qubit_combos:
+            gate = np.eye(qudit_dim)
+
+            for j, bit_str in enumerate(binary_bit_strings_rev):
+                if sum([bit_str[qb] for qb in gqc]) == i:
+                    gate[j][j] = -1
+
+            gate_name = "C" * (i - 1) + "Z_" + "".join(np.array(gqc, dtype=str))
+            qubit_gate_set[gate_name] = gate
 
     return qubit_gate_set
 
@@ -475,7 +491,7 @@ def compile_qudit_LU(qudit_dim, *qubit_gate_columns):
     return qudit_LU
 
 
-def sort_tuples_by_ele(groups,n):
+def sort_tuples_by_ele(groups, n):
     """
     Takes in a list of tuples and sorts them by the value of the nth element
     in each tuple.
@@ -520,5 +536,3 @@ def common_member(a, b):
         return True
     else:
         return False
-
-
