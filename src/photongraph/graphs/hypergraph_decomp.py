@@ -281,3 +281,46 @@ def qubit_hyperedges(qubit_state, qubit_logical_basis=[]):
         return hyper_graph_edges
     else:
         return np.array([])
+
+
+def state_vector_from_edges(qubit_num, edges):
+    """
+    Takes the edges of a graph state and generates the associated state vector.
+
+    Each edge corresponds to the application of a CZ gate between the qubits
+    which define the edge e.g. (2,3) <-> CZ_23.
+
+    We start from the equal superposition state and apply the CZ gates.
+    The application of a C^nZ gate results in multiplying the basis states
+    where qubits of the C^nZ gate are 1.
+
+    If using this to verify REW_decompose will need to take into account global phase
+
+    Args:
+        qubit_num (int): number of qubits in graph state
+        edges (list): edges of graph state
+
+    Returns:
+        dict:
+    """
+
+    # initialise a dict for the equal-superposition state
+    # just need a dict where the keys are the basis states and values are
+    # 0 or 1.
+
+    qubit_logical_basis = logical_basis(2, qubit_num)
+    # bsf == binary sign form
+    state_vector_bsf = {state: 0 for state in qubit_logical_basis}
+
+    for edge in edges:
+        for basis_state in qubit_logical_basis:
+            if sum([basis_state[int(qb)] for qb in edge]) == len(edge):
+                state_vector_bsf[basis_state] = \
+                    np.mod((state_vector_bsf[basis_state] + 1), 2)
+
+    # convert from bsf to standard form
+    amp = 1/(np.sqrt(2)**qubit_num)
+    state_vector_sf = {state: amp*(-1)**bin_sign for state, bin_sign in
+                        state_vector_bsf.items()}
+
+    return state_vector_sf

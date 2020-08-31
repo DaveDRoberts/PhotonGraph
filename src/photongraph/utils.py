@@ -433,16 +433,16 @@ def intra_qubit_gate_set(qudit_dim):
     si_X = np.sqrt(-1j) * HSH
 
     qubit_gate_set = {"H": H, "I": I, "X": X, "Z": Z, "Y": Y, "S": S, "HS": HS,
-                      "SH": SH, "si_Z": si_Z, "si_X": si_X}
+                      "HSH":HSH, "SH": SH, "si_Z": si_Z, "si_X": si_X}
 
-    binary_bit_strings_rev = logical_basis(2, qubit_num, True)
+    binary_bit_strings = logical_basis(2, qubit_num)
 
     for i in range(2, qubit_num + 1):
         gate_qubit_combos = list(itertools.combinations(qubits, i))
         for gqc in gate_qubit_combos:
             gate = np.eye(qudit_dim)
 
-            for j, bit_str in enumerate(binary_bit_strings_rev):
+            for j, bit_str in enumerate(binary_bit_strings):
                 if sum([bit_str[qb] for qb in gqc]) == i:
                     gate[j][j] = -1
 
