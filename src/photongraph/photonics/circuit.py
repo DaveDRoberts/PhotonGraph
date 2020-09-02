@@ -359,6 +359,8 @@ class PostGSG(Circuit):
                 print("Logical state is a qubit graph state.")
             else:
                 print("Logical state is NOT a qubit graph state.")
+                print("Number of basis states: ", len(logical_state.keys()),
+                      "/", str(2**len(list(logical_state.items())[0][0])))
         elif form == 'qudit':
             print("Qudit graph state checker not implemented yet.")
 
