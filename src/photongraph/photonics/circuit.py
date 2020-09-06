@@ -296,7 +296,7 @@ class PostGSG(Circuit):
         qudit_state = {}
         for i, qs in enumerate(qudit_basis_states):
             amp = calc_amp(fock_states[i])
-            if not np.isclose(amp, 0):
+            if not np.isclose(np.abs(amp), 0):
                 qudit_state[qs] = np.round(amp, 10)
 
         self._qudit_state = qudit_state
@@ -435,7 +435,7 @@ class PostGSG(Circuit):
 
         ps_qubit_state = self.__postselect_logical_state(form, Z_projectors,
                                                          True)
-
+        # NOTE: this removes the Z gates as they don't correspond to an edge
         graph_edges = np.array(
             [edge for edge in qubit_hyperedges(ps_qubit_state) if
              len(edge) > 1])
