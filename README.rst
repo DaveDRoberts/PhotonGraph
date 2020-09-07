@@ -1,4 +1,4 @@
-![PhotonGraph](https://github.com/photongraph/raw/master/docs/photongraph_logo.PNG)
+![PhotonGraph](docs/photongraph_logo.PNG)
 
 ===========
 PhotonGraph
