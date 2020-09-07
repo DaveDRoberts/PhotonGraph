@@ -458,6 +458,8 @@ class PostGSG(Circuit):
             else:
                 hyperedges.append(tuple(edge))
 
+
+
         graph = nx.Graph()
         graph.add_edges_from(edges)
 
@@ -483,7 +485,9 @@ class PostGSG(Circuit):
                          edgecolors='black', edge_color='black',
                          font_color='black', width=4, linewidths=3)
 
-        hg_nodes = set(np.array(hyperedges).flatten())
+
+        hg_nodes = set([q for he in hyperedges for q in he])
+
         hg_node_pos = {node: pos for node, pos in node_pos.items()
                             if node in hg_nodes}
 
