@@ -1,4 +1,4 @@
-![PhotonGraph](docs/photongraph_logo.PNG)
+.. image:: docs/photongraph_logo.PNG
 
 ===========
 PhotonGraph
