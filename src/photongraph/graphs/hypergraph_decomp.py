@@ -269,7 +269,9 @@ def qubit_hyperedges(qubit_state, qubit_logical_basis=[]):
         for state, amp in qubit_state.items():
             state_amps[qubit_logical_basis.index(state)] = amp
         # extract the signs of all the basis states: negative sign = 1 and positive sign = 0
-        extract_signs = np.array((np.sign(state_amps) - 1) // -2, dtype=int)
+
+        extract_signs = np.array((np.sign(state_amps).real - 1) // -2, dtype=int)
+
         # makes the all-zero state positive, flip signs of all other basis states if negative
         if extract_signs[0] == 1: extract_signs = np.mod(extract_signs + 1, 2)
         # generates a dictionary to represent the logical qubit state
@@ -277,7 +279,7 @@ def qubit_hyperedges(qubit_state, qubit_logical_basis=[]):
                                enumerate(qubit_logical_basis)}
         # generates a list of hyperedges, includes local Z operations
         hyper_graph_edges = np.array(
-            decompose_REW(REW_state_sign_form, qubit_num, edgelist=True))
+            decompose_REW(REW_state_sign_form, qubit_num, edgelist=True), dtype=object)
         return hyper_graph_edges
     else:
         return np.array([])

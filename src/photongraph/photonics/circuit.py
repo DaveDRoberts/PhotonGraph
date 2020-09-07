@@ -2,6 +2,7 @@ import strawberryfields as sf
 import thewalrus.quantum as twq
 import numpy as np
 import networkx as nx
+import hypernetx as hnx
 import matplotlib.pyplot as plt
 import string
 from ..utils import sort_tuples_by_ele, common_member, \
@@ -435,10 +436,7 @@ class PostGSG(Circuit):
 
         ps_qubit_state = self.__postselect_logical_state(form, Z_projectors,
                                                          True)
-        # NOTE: this removes the Z gates as they don't correspond to an edge
-        graph_edges = np.array(
-            [edge for edge in qubit_hyperedges(ps_qubit_state) if
-             len(edge) > 1])
+
 
         all_qubits = range(qubit_num)
         ps_qubits = list(Z_projectors.keys())
@@ -451,8 +449,17 @@ class PostGSG(Circuit):
             (i, qubit_colours[v]) if v not in ps_qubits else (i, 'grey') for
             i, v in enumerate(ro_qubits))
 
+        edges = []
+        hyperedges = []
+
+        for edge in qubit_hyperedges(ps_qubit_state):
+            if len(edge) == 2:
+                edges.append(edge)
+            else:
+                hyperedges.append(tuple(edge))
+
         graph = nx.Graph()
-        graph.add_edges_from(graph_edges)
+        graph.add_edges_from(edges)
 
         # Include qubits which don't have any edges
         if inc_ps_qubits:
@@ -466,11 +473,26 @@ class PostGSG(Circuit):
 
         fig = plt.figure(1, figsize=(9, 8))
 
-        nx.draw_networkx(graph, pos=nx.circular_layout(graph),
+        # generate node positions
+        node_pos = nx.circular_layout(graph)
+
+        nx.draw_networkx(graph, pos=node_pos,
                          labels=ro_qubits_labels, font_size=12,
                          node_color=[ro_qubits_colours[i] for i in
                                      graph.nodes()], node_size=1000,
                          edgecolors='black', edge_color='black',
                          font_color='black', width=4, linewidths=3)
+
+        hg_nodes = set(np.array(hyperedges).flatten())
+        hg_node_pos = {node: pos for node, pos in node_pos.items()
+                            if node in hg_nodes}
+
+        hg_edge_dict = {str(i) + "he-": he for i, he in enumerate(hyperedges)}
+
+        hg = hnx.Hypergraph(hg_edge_dict)
+
+        hnx.draw(hg, pos=hg_node_pos, with_edge_labels=False,
+                 with_node_labels=False,
+                 edges_kwargs={'dr': 0.06, 'linewidth': 3})
 
         plt.show()

@@ -431,9 +431,13 @@ def intra_qubit_gate_set(qudit_dim):
     HSH = H @ S @ H
     si_Z = np.sqrt(1j) * S
     si_X = np.sqrt(-1j) * HSH
-
+    T = np.array([[1, 0], [0, np.exp(0.25*np.pi*1j)]])
+    T_inv = T.conj().T
+    X_fr = H @ T @ H
+    X_fr_inv = X_fr.conj().T
     qubit_gate_set = {"H": H, "I": I, "X": X, "Z": Z, "Y": Y, "S": S, "HS": HS,
-                      "HSH":HSH, "SH": SH, "si_Z": si_Z, "si_X": si_X}
+                      "HSH": HSH, "SH": SH, "si_Z": si_Z, "si_X": si_X, "T": T,
+                      "T_inv": T_inv, "X_fr_inv": X_fr_inv, "X_fr": X_fr}
 
     binary_bit_strings = logical_basis(2, qubit_num)
 
