@@ -240,6 +240,7 @@ class PostGSG(Circuit):
 
         self._qudit_num = qudit_num
         self._qudit_dim = qudit_dim
+        self._qubit_num = int(np.log2(qudit_dim ** qudit_num))
         super().__init__(qudit_num*qudit_dim)
         self.__build_op_reg()
         self._qudit_state = {}
@@ -315,7 +316,7 @@ class PostGSG(Circuit):
 
         self._qubit_state = qubit_state
 
-    def __postselect_logical_state(self, form, Z_projectors):
+    def __postselect_logical_state(self, form, Z_projectors, qubit_perm):
         """
 
 
@@ -323,7 +324,7 @@ class PostGSG(Circuit):
             Args:
                 form:
                 Z_projectors (dict):
-                reduced (bool):
+                qubit_perm (list): permutes the labels of qubits
 
             Returns:
                 (dict):
@@ -341,9 +342,9 @@ class PostGSG(Circuit):
             if np.all([True if qs[q] == s else False for q, s in
                        Z_projectors.items()]):
 
-                perm_qs = list(qs)
-                #perm_qs[3], perm_qs[5] = perm_qs[5], perm_qs[3]
-
+                perm_qs = np.array(list(qs))
+                og_order = list(range(self._qubit_num))
+                perm_qs[og_order] = perm_qs[qubit_perm]
                 ps_logical_state_un[tuple(perm_qs)] = amp
 
         norm_const = np.sqrt(
@@ -389,24 +390,31 @@ class PostGSG(Circuit):
 
             print(state_str + "  :  " + amp_str)
 
-    def logical_output_state(self, form="qubit", Z_projectors = {}):
+    def logical_output_state(self, form="qubit", Z_projectors={},
+                             qubit_perm=None):
         """
         Prints out the logical output state in one of two forms, qubit or qudit.
 
         Args:
             form (str):
             Z_projectors (dict):
+            qubit_perm (list): permutes the labels of qubits
 
         Examples:
 
         """
         assert form in ['qubit', 'qudit']
 
-        ps_logical_state = self.__postselect_logical_state(form, Z_projectors)
+        if not qubit_perm:
+            qubit_perm = list(range(self._qubit_num))
+
+        ps_logical_state = self.__postselect_logical_state(form, Z_projectors,
+                                                           qubit_perm)
         self.__print_state(form, ps_logical_state, Z_projectors)
 
     def display_gs(self, qudit_type_order, form='qubit', Z_projectors={},
-                            inc_ps_qubits = True, label_type="let_num"):
+                            inc_ps_qubits=True, label_type="let_num",
+                   qubit_perm=None):
         """
         Displays postselected graph state
 
@@ -416,14 +424,13 @@ class PostGSG(Circuit):
             Z_projectors (dict):
             inc_ps_qubits (bool):
             label_type (str): Options 'num', 'let_num', 'cat_num'
-
+            qubit_perm (list): permutes the labels of qubits
         """
         # need to perform checks on form and Z projectors
 
         qudit_dim = self._qudit_dim
-        qudit_num = self._qudit_num
 
-        qubit_num = int(np.log2(qudit_dim ** qudit_num))
+        qubit_num = self._qubit_num
         non_ps_qubit_num = qubit_num - len(list(Z_projectors.keys()))
 
         if label_type == "let_num":
@@ -446,7 +453,8 @@ class PostGSG(Circuit):
                             range(qubit_num)}
             qubit_colours = {k: 'teal' for k in range(qubit_num)}
 
-        ps_qubit_state = self.__postselect_logical_state(form, Z_projectors)
+        ps_qubit_state = self.__postselect_logical_state(form, Z_projectors,
+                                                         qubit_perm)
 
         reduced_ps_qubit_state = {}
         for qs, amp in ps_qubit_state.items():

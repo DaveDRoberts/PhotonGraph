@@ -405,7 +405,7 @@ def intra_qubit_gate_set(qudit_dim):
     Returns:
         dict: key=gate label, value=matrix (numpy.ndarray())
 
-
+    TODO: Include CNOT, CCNOT etc.
 
     Examples:
 
@@ -540,3 +540,5 @@ def common_member(a, b):
         return True
     else:
         return False
+
+
