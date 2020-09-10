@@ -294,11 +294,17 @@ class PostGSG(Circuit):
             return twq.pure_state_amplitude(np.zeros(2 * mode_num), cov_matrix,
                                         fock_state)
 
-        qudit_state = {}
+        qudit_state_un = {}
         for i, qs in enumerate(qudit_basis_states):
             amp = calc_amp(fock_states[i])
             if not np.isclose(np.abs(amp), 0):
-                qudit_state[qs] = np.round(amp, 10)
+                qudit_state_un[qs] = np.round(amp, 10)
+
+        # normalise the probability amplitudes of the logical states
+        norm_const = np.sqrt(np.sum(np.square(np.abs(np.array(list(qudit_state_un.values()))))))
+
+        qudit_state = {state:amp/norm_const for state, amp in
+                              qudit_state_un.items()}
 
         self._qudit_state = qudit_state
 
@@ -324,22 +330,27 @@ class PostGSG(Circuit):
 
         """
 
-        ps_logical_state = {}
-        reduced_ps_logical_state = {}
+        ps_logical_state_un = {}
+
         if form == 'qubit':
             logical_state = self._qubit_state
-        elif form== 'qudit':
+        elif form == 'qudit':
             logical_state = self._qudit_state
-
-        #TODO: normalise the probability amplitudes
 
         for qs, amp in logical_state.items():
             if np.all([True if qs[q] == s else False for q, s in
                        Z_projectors.items()]):
-                ps_logical_state[qs] = amp
-                reduced_qubit_state = tuple([q for i, q in enumerate(qs) if
-                                             i not in Z_projectors.keys()])
-                reduced_ps_logical_state[reduced_qubit_state] = amp
+
+                perm_qs = list(qs)
+                #perm_qs[3], perm_qs[5] = perm_qs[5], perm_qs[3]
+
+                ps_logical_state_un[tuple(perm_qs)] = amp
+
+        norm_const = np.sqrt(
+            np.sum(np.square(np.abs(np.array(list(ps_logical_state_un.values()))))))
+
+        ps_logical_state = {state: amp / norm_const for state, amp in
+                       ps_logical_state_un.items()}
 
         return ps_logical_state
 
@@ -370,7 +381,7 @@ class PostGSG(Circuit):
         elif form == 'qudit':
             print("Qudit graph state checker not implemented yet.")
 
-        for state, amp in reduced_ps_logical_state.items():
+        for state, amp in logical_state.items():
             state_str = "|" + ''.join(
                 "%s " % ','.join(map(str, str(x))) for x in state)[:-1] + ">"
 
