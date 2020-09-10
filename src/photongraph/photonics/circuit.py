@@ -309,7 +309,7 @@ class PostGSG(Circuit):
 
         self._qubit_state = qubit_state
 
-    def __postselect_logical_state(self, form, Z_projectors, reduced):
+    def __postselect_logical_state(self, form, Z_projectors):
         """
 
 
@@ -331,6 +331,8 @@ class PostGSG(Circuit):
         elif form== 'qudit':
             logical_state = self._qudit_state
 
+        #TODO: normalise the probability amplitudes
+
         for qs, amp in logical_state.items():
             if np.all([True if qs[q] == s else False for q, s in
                        Z_projectors.items()]):
@@ -339,13 +341,10 @@ class PostGSG(Circuit):
                                              i not in Z_projectors.keys()])
                 reduced_ps_logical_state[reduced_qubit_state] = amp
 
-        if reduced:
-            return reduced_ps_logical_state
-        else:
-            return ps_logical_state
+        return ps_logical_state
 
     @staticmethod
-    def __print_state(form, logical_state):
+    def __print_state(form, logical_state, Z_projectors):
         """
 
         Args:
@@ -356,7 +355,13 @@ class PostGSG(Circuit):
         """
         # print out if the state is a graph state
         if form == 'qubit':
-            if qubit_REW_state_check(logical_state):
+            reduced_ps_logical_state = {}
+            for qs, amp in logical_state.items():
+                reduced_qubit_state = tuple([q for i, q in enumerate(qs)
+                                             if i not in Z_projectors.keys()])
+                reduced_ps_logical_state[reduced_qubit_state] = amp
+
+            if qubit_REW_state_check(reduced_ps_logical_state):
                 print("Logical state is a qubit graph state.")
             else:
                 print("Logical state is NOT a qubit graph state.")
@@ -365,7 +370,7 @@ class PostGSG(Circuit):
         elif form == 'qudit':
             print("Qudit graph state checker not implemented yet.")
 
-        for state, amp in logical_state.items():
+        for state, amp in reduced_ps_logical_state.items():
             state_str = "|" + ''.join(
                 "%s " % ','.join(map(str, str(x))) for x in state)[:-1] + ">"
 
@@ -386,17 +391,13 @@ class PostGSG(Circuit):
         """
         assert form in ['qubit', 'qudit']
 
-        ps_logical_state = self.__postselect_logical_state(form, Z_projectors,
-                                                           reduced=False)
-        self.__print_state(form, ps_logical_state)
+        ps_logical_state = self.__postselect_logical_state(form, Z_projectors)
+        self.__print_state(form, ps_logical_state, Z_projectors)
 
     def display_gs(self, qudit_type_order, form='qubit', Z_projectors={},
                             inc_ps_qubits = True, label_type="let_num"):
         """
         Displays postselected graph state
-
-        todo: Need implement the code for displaying hypergraphs and qudit
-              graphs, and qudit multigraphs.
 
         Args:
             qudit_type_order (str): e.g. 'bbrrrrbb'
@@ -434,9 +435,13 @@ class PostGSG(Circuit):
                             range(qubit_num)}
             qubit_colours = {k: 'teal' for k in range(qubit_num)}
 
-        ps_qubit_state = self.__postselect_logical_state(form, Z_projectors,
-                                                         True)
+        ps_qubit_state = self.__postselect_logical_state(form, Z_projectors)
 
+        reduced_ps_qubit_state = {}
+        for qs, amp in ps_qubit_state.items():
+            reduced_qubit_state = tuple([q for i, q in enumerate(qs)
+                                         if i not in Z_projectors.keys()])
+            reduced_ps_qubit_state[reduced_qubit_state] = amp
 
         all_qubits = range(qubit_num)
         ps_qubits = list(Z_projectors.keys())
@@ -451,14 +456,12 @@ class PostGSG(Circuit):
 
         edges = []
         hyperedges = []
-
-        for edge in qubit_hyperedges(ps_qubit_state):
+        for edge in qubit_hyperedges(reduced_ps_qubit_state):
             if len(edge) == 2:
                 edges.append(edge)
-            else:
+            elif len(edge)>2:
+                # plotting a single Z edge causes plotting problems
                 hyperedges.append(tuple(edge))
-
-
 
         graph = nx.Graph()
         graph.add_edges_from(edges)
