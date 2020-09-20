@@ -522,3 +522,4 @@ class PostGSG(Circuit):
                  edges_kwargs={'dr': 0.06, 'linewidth': 3})
 
         plt.show()
+

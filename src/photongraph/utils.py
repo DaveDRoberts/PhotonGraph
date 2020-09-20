@@ -1,62 +1,9 @@
 import numpy as np
-import itertools
+import itertools as it
 import math
 import scipy
 import thewalrus.quantum as twq
 from collections import defaultdict
-
-
-def cartesian_product(*iterable):
-    """
-    Performs a Cartesian product between all the elements of an arbitrary
-    number of iterables
-
-    Args:
-        iterable (any interable object):
-
-    Returns:
-        (list): Result of Cartesian product between iterables
-
-    Examples:
-    >>>cartesian_product([[1,0],[1,0]], [[1,0],[1,0]])
-    [[[1, 0], [1, 0]], [[1, 0], [0, 1]], [[0, 1], [1, 0]], [[0, 1], [0, 1]]]
-
-    >>>cartesian_product(['a','b'],['c','d'])
-    [['a', 'c'], ['a', 'd'], ['b', 'c'], ['b', 'd']]
-
-    """
-
-    if not iterable:
-        return [[]]
-    else:
-        return [[x] + p for x in iterable[0] for p in
-                cartesian_product(*iterable[1:])]
-
-
-def tensor(*matrices):
-    """
-    Function to calculate tensor product of multiple matrices.
-
-    Args:
-        matrices (numpy.ndarray): arbitary number of matrices
-
-    Returns:
-        (numpy.ndarray):
-
-    Examples:
-    >>>H = (1/np.sqrt(2)) * np.array([[1, 1],[1, -1]])
-    >>>tensor(H,H)
-    np.array([[ 0.5,  0.5,  0.5,  0.5],
-              [ 0.5, -0.5,  0.5, -0.5],
-              [ 0.5,  0.5, -0.5, -0.5],
-              [ 0.5, -0.5, -0.5,  0.5]])
-
-    """
-
-    res = np.array([[1]])
-    for i in matrices:
-        res = np.kron(res, i)
-    return res
 
 
 def logical_basis(qudit_dim, qudit_num, rev=False):
@@ -85,11 +32,11 @@ def logical_basis(qudit_dim, qudit_num, rev=False):
     """
     if rev:
         return [tuple(reversed(tuple(np.array(list(''.join(i)), dtype=int))))
-                for i in itertools.product(''.join(str(i)
+                for i in it.product(''.join(str(i)
                         for i in np.arange(qudit_dim)), repeat=qudit_num)]
     else:
         return [tuple(np.array(list(''.join(i)), dtype=int))
-                for i in itertools.product(''.join(str(i)
+                for i in it.product(''.join(str(i)
                         for i in np.arange(qudit_dim)), repeat=qudit_num)]
 
 
@@ -156,7 +103,7 @@ def logical_fock_states(qudit_dim, qudit_num, photon_cutoff=1):
     fock_single_qudit_map = dict(
         (tuple(vl), k) for k, v in single_qudit_fock_map.items() for vl in v)
 
-    ind_fock_state_combos = cartesian_product(
+    ind_fock_state_combos = it.product(
         *[[k for j in single_qudit_fock_map.values() for k in j] for i in
           range(qudit_num)])
 
@@ -242,6 +189,112 @@ def qudit_qubit_encoding(qudit_dim, qudit_num):
     return qudit_to_qubit_map
 
 
+def intra_qubit_gate_set(qudit_dim):
+    """
+    Generate the logical qubit operations available for qubits encoded
+    in a particular qudit dimension.
+
+    Args:
+        qudit_dim (int): Qudit dimension
+
+    Returns:
+        dict: key=gate label, value=matrix (numpy.ndarray())
+
+    TODO: Include CNOT, CCNOT etc.
+    TODO: Include sqrt(CZ)
+
+    Examples:
+
+    """
+    try:
+        assert (qudit_dim & (qudit_dim - 1) == 0) and qudit_dim != 0
+    except:
+        raise AssertionError('Qudit dimension must be a power of 2.')
+
+
+    qubit_num = int(np.log2(qudit_dim))
+    qubits = range(qubit_num)
+
+    # Single-qubit unitary operations
+    H = (1 / np.sqrt(2)) * np.array([[1, 1], [1, -1]])
+    I = np.array([[1, 0], [0, 1]])
+    X = np.array([[0, 1], [1, 0]])
+    Z = np.array([[1, 0], [0, -1]])
+    Y = 1j * X @ Z
+    S = np.array([[1, 0], [0, 1j]])
+    HS = H @ S
+    SH = S @ H
+    HSH = H @ S @ H
+    si_Z = np.sqrt(1j) * S
+    si_X = np.sqrt(-1j) * HSH
+    T = np.array([[1, 0], [0, np.exp(0.25*np.pi*1j)]])
+    T_inv = T.conj().T
+    X_fr = H @ T @ H
+    X_fr_inv = X_fr.conj().T
+
+    sq_CZ = np.array([[1,0,0,0], [0,1,0,0], [0,0,0,1], [0,0,1j,0]])
+
+    qubit_gate_set = {"H": H, "I": I, "X": X, "Z": Z, "Y": Y, "S": S, "HS": HS,
+                      "HSH": HSH, "SH": SH, "si_Z": si_Z, "si_X": si_X, "T": T,
+                      "T_inv": T_inv, "X_fr_inv": X_fr_inv, "X_fr": X_fr,
+                      "sq_CZ": sq_CZ}
+
+    binary_bit_strings = logical_basis(2, qubit_num)
+
+    for i in range(2, qubit_num + 1):
+        gate_qubit_combos = list(it.combinations(qubits, i))
+        for gqc in gate_qubit_combos:
+            gate = np.eye(qudit_dim)
+
+            for j, bit_str in enumerate(binary_bit_strings):
+                if sum([bit_str[qb] for qb in gqc]) == i:
+                    gate[j][j] = -1
+
+            gate_name = "C" * (i - 1) + "Z_" + "".join(np.array(gqc, dtype=str))
+            qubit_gate_set[gate_name] = gate
+
+    return qubit_gate_set
+
+
+def compile_qudit_LU(qudit_dim, *qubit_gate_columns):
+    """
+    Function compiles the unitary operation which must be applied to the modes
+    of a qudit such that the specified quantum gates are applied to its
+    constituent qubits.
+
+    Args:
+        qudit_dim (int): Qudit dimension, this should be a power of two so that qudit
+        states can be simply mapped to qubit states.
+        qubit_gates (list): This is just a list of strings, each specifies the gates
+        to be applied. Each list may contain between 1 and number of qubits of elements.
+
+        e.g. if qudit_dim=4 then this maps to 2 qubits, each set of qubit gates can either
+        be two single-qubit gates or one two-qubit gate.
+        e.g. if qudit_dim=8 then this maps to 3 qubits and we can have 3 single-qubit gates,
+        1 single-qubit gate and a two-qubit gate or 1 three-qubit gate.
+
+    Returns:
+        numpy.ndarray: Returns the compiled unitary matrix
+
+    Examples:
+
+
+    """
+
+    # check that the qudit dimension is a power of 2
+
+    # generate qubit gate set
+    qgs = intra_qubit_gate_set(qudit_dim)
+
+    qudit_LU = np.eye(qudit_dim)
+
+    for qubit_gates in qubit_gate_columns:
+        qubit_gates_matrices = [qgs[qg] for qg in qubit_gates]
+        qudit_LU = np.matmul(tensor(*qubit_gates_matrices), qudit_LU)
+
+    return qudit_LU
+
+
 def efficiency_scale_factor(photon_occ, eta):
     """
     This function calculates the scale factor which scales the coincidence
@@ -275,7 +328,7 @@ def efficiency_scale_factor(photon_occ, eta):
     """
 
     gamma = 0
-    for ls in itertools.product(*[range(k) for k in photon_occ]):
+    for ls in it.product(*[range(k) for k in photon_occ]):
         binomials = 1
         for i, k in enumerate(photon_occ):
             binomials *= int(scipy.special.binom(k, ls[i]))
@@ -394,107 +447,6 @@ def calc_coin_rate(cov_matrix, qudit_state, qudit_fock_map, loss_params,
         return coin_rate
 
 
-def intra_qubit_gate_set(qudit_dim):
-    """
-    Generate the logical qubit operations available for qubits encoded
-    in a particular qudit dimension.
-
-    Args:
-        qudit_dim (int): Qudit dimension
-
-    Returns:
-        dict: key=gate label, value=matrix (numpy.ndarray())
-
-    TODO: Include CNOT, CCNOT etc.
-
-    Examples:
-
-    """
-    try:
-        assert (qudit_dim & (qudit_dim - 1) == 0) and qudit_dim != 0
-    except:
-        raise AssertionError('Qudit dimension must be a power of 2.')
-
-
-    qubit_num = int(np.log2(qudit_dim))
-    qubits = range(qubit_num)
-
-    # Single-qubit unitary operations
-    H = (1 / np.sqrt(2)) * np.array([[1, 1], [1, -1]])
-    I = np.array([[1, 0], [0, 1]])
-    X = np.array([[0, 1], [1, 0]])
-    Z = np.array([[1, 0], [0, -1]])
-    Y = 1j * X @ Z
-    S = np.array([[1, 0], [0, 1j]])
-    HS = H @ S
-    SH = S @ H
-    HSH = H @ S @ H
-    si_Z = np.sqrt(1j) * S
-    si_X = np.sqrt(-1j) * HSH
-    T = np.array([[1, 0], [0, np.exp(0.25*np.pi*1j)]])
-    T_inv = T.conj().T
-    X_fr = H @ T @ H
-    X_fr_inv = X_fr.conj().T
-    qubit_gate_set = {"H": H, "I": I, "X": X, "Z": Z, "Y": Y, "S": S, "HS": HS,
-                      "HSH": HSH, "SH": SH, "si_Z": si_Z, "si_X": si_X, "T": T,
-                      "T_inv": T_inv, "X_fr_inv": X_fr_inv, "X_fr": X_fr}
-
-    binary_bit_strings = logical_basis(2, qubit_num)
-
-    for i in range(2, qubit_num + 1):
-        gate_qubit_combos = list(itertools.combinations(qubits, i))
-        for gqc in gate_qubit_combos:
-            gate = np.eye(qudit_dim)
-
-            for j, bit_str in enumerate(binary_bit_strings):
-                if sum([bit_str[qb] for qb in gqc]) == i:
-                    gate[j][j] = -1
-
-            gate_name = "C" * (i - 1) + "Z_" + "".join(np.array(gqc, dtype=str))
-            qubit_gate_set[gate_name] = gate
-
-    return qubit_gate_set
-
-
-def compile_qudit_LU(qudit_dim, *qubit_gate_columns):
-    """
-    Function compiles the unitary operation which must be applied to the modes
-    of a qudit such that the specified quantum gates are applied to its
-    constituent qubits.
-
-    Args:
-        qudit_dim (int): Qudit dimension, this should be a power of two so that qudit
-        states can be simply mapped to qubit states.
-        qubit_gates (list): This is just a list of strings, each specifies the gates
-        to be applied. Each list may contain between 1 and number of qubits of elements.
-
-        e.g. if qudit_dim=4 then this maps to 2 qubits, each set of qubit gates can either
-        be two single-qubit gates or one two-qubit gate.
-        e.g. if qudit_dim=8 then this maps to 3 qubits and we can have 3 single-qubit gates,
-        1 single-qubit gate and a two-qubit gate or 1 three-qubit gate.
-
-    Returns:
-        numpy.ndarray: Returns the compiled unitary matrix
-
-    Examples:
-
-
-    """
-
-    # check that the qudit dimension is a power of 2
-
-    # generate qubit gate set
-    qgs = intra_qubit_gate_set(qudit_dim)
-
-    qudit_LU = np.eye(qudit_dim)
-
-    for qubit_gates in qubit_gate_columns:
-        qubit_gates_matrices = [qgs[qg] for qg in qubit_gates]
-        qudit_LU = np.matmul(tensor(*qubit_gates_matrices), qudit_LU)
-
-    return qudit_LU
-
-
 def sort_tuples_by_ele(groups, n):
     """
     Takes in a list of tuples and sorts them by the value of the nth element
@@ -542,3 +494,27 @@ def common_member(a, b):
         return False
 
 
+def tensor(*matrices):
+    """
+    Function to calculate tensor product of multiple matrices.
+
+    Args:
+        matrices (numpy.ndarray): arbitary number of matrices
+
+    Returns:
+        (numpy.ndarray):
+
+    Examples:
+    >>>H = (1/np.sqrt(2)) * np.array([[1, 1],[1, -1]])
+    >>>tensor(H,H)
+    np.array([[ 0.5,  0.5,  0.5,  0.5],
+              [ 0.5, -0.5,  0.5, -0.5],
+              [ 0.5,  0.5, -0.5, -0.5],
+              [ 0.5, -0.5, -0.5,  0.5]])
+
+    """
+
+    res = np.array([[1]])
+    for i in matrices:
+        res = np.kron(res, i)
+    return res
