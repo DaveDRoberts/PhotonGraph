@@ -6,7 +6,13 @@ import thewalrus.quantum as twq
 from collections import defaultdict
 
 
-def logical_basis(qudit_dim, qudit_num, rev=False):
+def check_integer(param, min_val):
+    """Checks if param is a non-zero integer."""
+    assert isinstance(param, int), "Must be an integer."
+    assert param > min_val, "Must be a greater than min_val."
+
+
+def logical_basis(qudit_dim, qudit_num):
     """
         Generates all of the logical basis states for a specific qudit
         dimension and number of qudits.
@@ -14,57 +20,47 @@ def logical_basis(qudit_dim, qudit_num, rev=False):
         Args:
             qudit_dim (int): Qudit dimension
             qudit_num (int): Number of qudits
-            rev (bool): reverses the order of the binary bit strings
 
         Returns:
             (list): A list of tuples where each tuple is a basis state.
             Elements are in the canonical order.
 
         Examples:
-        >>>logical_basis_states(2,2)
+        >>>logical_basis(2,2)
         [(0, 0), (0, 1), (1, 0), (1, 1)]
 
-        >>>logical_basis_states(2,2, True)
-        [(0, 0), (1, 0), (0, 1), (1, 1)]
-
-        >>>logical_basis_states(4,1)
+        >>>logical_basis(4,1)
         [(0,), (1,), (2,), (3,)]
     """
-    if rev:
-        return [tuple(reversed(tuple(np.array(list(''.join(i)), dtype=int))))
-                for i in it.product(''.join(str(i)
-                        for i in np.arange(qudit_dim)), repeat=qudit_num)]
-    else:
-        return [tuple(np.array(list(''.join(i)), dtype=int))
-                for i in it.product(''.join(str(i)
-                        for i in np.arange(qudit_dim)), repeat=qudit_num)]
+
+    check_integer(qudit_dim, 0)
+    check_integer(qudit_num, 0)
+
+    return [tuple(np.array(list(''.join(i)), dtype=int))
+            for i in it.product(''.join(str(i)
+                                        for i in np.arange(qudit_dim)),
+                                repeat=qudit_num)]
 
 
 def logical_fock_states(qudit_dim, qudit_num, photon_cutoff=1):
     """
     Function to generate all the Fock states which correspond to each
-    qudit state. The task is broken down into generating the logical Fock states
-    for a single qudit and then taking the cartesian product between the logical
+    qudit state - one photon per qudit.
+
+    The task is broken down into generating the logical Fock states for a
+    single qudit and then taking the cartesian product between the logical
     Fock states for n number of qudits. This gives all the n-qubit logical Fock
     states.
 
-    Since non-photon number resolving detectors are used in experiments Fock states
-    which have more than one photon in a single mode are indiscernable from Fock
-    states with only a single photon in a single mode. This higher-photon logical
-    Fock states must be taken into account when considering photon counting statistics
-    and graph state fidelity.
-
-
-    Todo: check that all input args are integers greater than 0
-
-    Todo: two functions which use most of the code in this function that will
-          return logical fock states in different forms: dict and np.array.
-
-
+    Since non-photon number resolving detectors are used in experiments Fock
+    states which have more than one photon in a single mode are indiscernable
+    from Fock states with only a single photon in a single mode. These
+    multi-photon logical Fock states must be taken into account when
+    considering photon counting statistics and graph state fidelity.
 
     Args:
-        qudit_num (int): Number of qudits
         qudit_dim (int): Qudit dimension
+        qudit_num (int): Number of qudits
         photon_cutoff (int): Max number of photons per mode
 
     Returns:
@@ -80,14 +76,9 @@ def logical_fock_states(qudit_dim, qudit_num, photon_cutoff=1):
 
     """
 
-    def check_input(param):
-        """Checks if param is a non-zero integer."""
-        assert isinstance(param, int)
-        assert param > 0
-
-    check_input(qudit_dim)
-    check_input(qudit_num)
-    check_input(photon_cutoff)
+    check_integer(qudit_dim, 0)
+    check_integer(qudit_num, 0)
+    check_integer(photon_cutoff, 0)
 
     single_qudit_fock_map = {}
 
@@ -118,17 +109,23 @@ def logical_fock_states(qudit_dim, qudit_num, photon_cutoff=1):
     return dict(qudit_fock_map)
 
 
-def logical_fock_states_lists(qudit_dim, qudit_num):
+def logical_fock_states_lists(qudit_dim, qudit_num, photon_cutoff=1):
     """
+    Generates all of the Fock states which correspond to logical qudit states
+    and returns two arrays: one for logical qudit states and another for the
+    Fock states.
+
 
     Args:
-        qudit_dim:
-        qudit_num:
+        qudit_dim (int): Qudit dimension
+        qudit_num (int): Number of qudits
+        photon_cutoff (int): Max number of photons per mode
 
     Returns:
-        tuple(np.array, np.array):
+        tuple(list, list): First list is all of the qudit basis states and the
+        second list contains all of the corresponding Fock states.
     """
-    lfs = logical_fock_states(qudit_dim, qudit_num)
+    lfs = logical_fock_states(qudit_dim, qudit_num, photon_cutoff)
     qudit_basis_states = []
     fock_states = []
     for qds, fs in lfs.items():
@@ -141,12 +138,14 @@ def logical_fock_states_lists(qudit_dim, qudit_num):
 def qudit_qubit_encoding(qudit_dim, qudit_num):
     """
     Generates the mapping between qudit and qubit states.
+
     In order to map qudit states to qubit states qudit dimension
     must be a power of 2.
 
     Args:
-        qudit_num (int): Number of qudits
         qudit_dim (int): Qudit dimension
+        qudit_num (int): Number of qudits
+
 
     Returns:
         (dict): Key is a qudit state and value is its corresponding qubit state
@@ -169,14 +168,12 @@ def qudit_qubit_encoding(qudit_dim, qudit_num):
      (3, 1): (1, 1, 0, 1),
      (3, 2): (1, 1, 1, 0),
      (3, 3): (1, 1, 1, 1)}
-
-
     """
 
-    try:
-        assert (qudit_dim & (qudit_dim - 1) == 0) and qudit_dim != 0
-    except:
-        raise AssertionError('Qudit dimension must be a power of 2.')
+    assert (qudit_dim & (qudit_dim - 1) == 0) and qudit_dim != 0, \
+        'Qudit dimension must be a power of 2.'
+
+    check_integer(qudit_num, 0)
 
     basis_state_num = qudit_dim ** qudit_num
     qubit_num = int(math.log2(qudit_dim ** qudit_num))
@@ -187,6 +184,68 @@ def qudit_qubit_encoding(qudit_dim, qudit_num):
                           in range(basis_state_num)}
 
     return qudit_to_qubit_map
+
+
+def controlled_qubit_gates(qubit_num, U, U_label):
+    """
+    Generates all the possible n-qubit controlled-U gates for some single-qubit
+    gate, U.
+
+
+    Args:
+        qubit_num:
+        U: single-qubit unitary operation
+        U_label (str): label for single-qubit operation e.g. X, Z
+
+    Returns:
+        (dict): Keys are gate names (str) and values are corresponding matrices
+    """
+
+    check_integer(qubit_num, 1)
+    # Check that U is a 2x2 unitary matrix
+    assert np.allclose(np.eye(2, dtype=complex), U.dot(U.T.conj()))
+    # Check that U_label is a string
+    assert type(U_label) == str
+
+    I = np.array([[1, 0], [0, 1]], dtype=complex)
+    P_zero = np.array([[1, 0], [0, 0]], dtype=complex)
+    P_one = np.array([[0, 0], [0, 1]], dtype=complex)
+
+    CU_gate_set = {}
+
+    for m in range(2, qubit_num + 1):
+        # m = gate qubit number
+        m_qubit_combos = list(it.permutations(range(qubit_num), r=m))
+        k = m - 1  # number of control qubits
+        ctrls_targ = set(
+            [(tuple(sorted(ct[:k])), ct[-1]) for ct in m_qubit_combos])
+
+        # excludes the all-P_one combo
+        ctrl_qubit_projs = list(it.product((P_zero, P_one), repeat=k))[:-1]
+
+        # each combination of ctrls and targ specifies a control gate
+        for ctrls, targ in ctrls_targ:
+            CU_gate = np.zeros(shape=(2 ** qubit_num, 2 ** qubit_num))
+
+            for cqp in ctrl_qubit_projs:
+                temp = [I] * qubit_num
+                for i, ctrl in enumerate(ctrls):
+                    temp[ctrl] = cqp[i]
+                CU_gate = np.add(CU_gate, tensor(*temp))
+
+            temp2 = [I] * qubit_num
+            for ctrl in ctrls:
+                temp2[ctrl] = P_one
+            temp2[targ] = U
+            CU_gate = np.add(CU_gate, tensor(*temp2))
+
+            ct = list(ctrls)
+            ct.append(targ)
+            CU_gate_name = "C" * k + U_label + "_" + "".join(
+                np.array(ct, dtype=str))
+            CU_gate_set[CU_gate_name] = CU_gate
+
+    return CU_gate_set
 
 
 def intra_qubit_gate_set(qudit_dim):
@@ -200,58 +259,44 @@ def intra_qubit_gate_set(qudit_dim):
     Returns:
         dict: key=gate label, value=matrix (numpy.ndarray())
 
-    TODO: Include CNOT, CCNOT etc.
-    TODO: Include sqrt(CZ)
-
-    Examples:
-
     """
-    try:
-        assert (qudit_dim & (qudit_dim - 1) == 0) and qudit_dim != 0
-    except:
-        raise AssertionError('Qudit dimension must be a power of 2.')
-
+    assert (qudit_dim & (qudit_dim - 1) == 0) and qudit_dim != 0, \
+        'Qudit dimension must be a power of 2.'
 
     qubit_num = int(np.log2(qudit_dim))
     qubits = range(qubit_num)
 
     # Single-qubit unitary operations
-    H = (1 / np.sqrt(2)) * np.array([[1, 1], [1, -1]])
-    I = np.array([[1, 0], [0, 1]])
-    X = np.array([[0, 1], [1, 0]])
-    Z = np.array([[1, 0], [0, -1]])
+    H = (1 / np.sqrt(2)) * np.array([[1, 1], [1, -1]], dtype=complex)
+    I = np.array([[1, 0], [0, 1]], dtype=complex)
+    X = np.array([[0, 1], [1, 0]], dtype=complex)
+    Z = np.array([[1, 0], [0, -1]], dtype=complex)
     Y = 1j * X @ Z
-    S = np.array([[1, 0], [0, 1j]])
+    S = np.array([[1, 0], [0, 1j]], dtype=complex)
     HS = H @ S
     SH = S @ H
     HSH = H @ S @ H
     si_Z = np.sqrt(1j) * S
     si_X = np.sqrt(-1j) * HSH
-    T = np.array([[1, 0], [0, np.exp(0.25*np.pi*1j)]])
+    T = np.array([[1, 0], [0, np.exp(0.25 * np.pi * 1j)]])
     T_inv = T.conj().T
     X_fr = H @ T @ H
     X_fr_inv = X_fr.conj().T
 
-    sq_CZ = np.array([[1,0,0,0], [0,1,0,0], [0,0,0,1], [0,0,1j,0]])
-
     qubit_gate_set = {"H": H, "I": I, "X": X, "Z": Z, "Y": Y, "S": S, "HS": HS,
                       "HSH": HSH, "SH": SH, "si_Z": si_Z, "si_X": si_X, "T": T,
-                      "T_inv": T_inv, "X_fr_inv": X_fr_inv, "X_fr": X_fr,
-                      "sq_CZ": sq_CZ}
+                      "T_inv": T_inv, "X_fr_inv": X_fr_inv, "X_fr": X_fr}
 
-    binary_bit_strings = logical_basis(2, qubit_num)
+    # add control gates
+    CX_gates = controlled_qubit_gates(qubit_num, X, 'X')
+    CZ_gates = controlled_qubit_gates(qubit_num, Z, 'Z')
+    CS_gates = controlled_qubit_gates(qubit_num, S, 'S')
 
-    for i in range(2, qubit_num + 1):
-        gate_qubit_combos = list(it.combinations(qubits, i))
-        for gqc in gate_qubit_combos:
-            gate = np.eye(qudit_dim)
+    CU_gates_list = [CX_gates, CZ_gates, CS_gates]
 
-            for j, bit_str in enumerate(binary_bit_strings):
-                if sum([bit_str[qb] for qb in gqc]) == i:
-                    gate[j][j] = -1
-
-            gate_name = "C" * (i - 1) + "Z_" + "".join(np.array(gqc, dtype=str))
-            qubit_gate_set[gate_name] = gate
+    for CU_gates in CU_gates_list:
+        for gate_label, gate_U in CU_gates.items():
+            qubit_gate_set[gate_label] = gate_U
 
     return qubit_gate_set
 
@@ -275,9 +320,6 @@ def compile_qudit_LU(qudit_dim, *qubit_gate_columns):
 
     Returns:
         numpy.ndarray: Returns the compiled unitary matrix
-
-    Examples:
-
 
     """
 

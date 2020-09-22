@@ -11,6 +11,12 @@ from photongraph.utils import *
 # def qudit_num(request):
 #     return request.param
 
+# @pytest.fixture()
+# def s():
+#     return 1/np.sqrt(2)
+
+s = 1/np.sqrt(2)
+
 @pytest.mark.parametrize("qudit_dim, qudit_num, exp_result", [
     (2, 2, [(0, 0), (0, 1), (1, 0), (1, 1)]),
     (4, 4, [(0, 0, 0, 0), (0, 0, 0, 1), (0, 0, 0, 2), (0, 0, 0, 3),
@@ -145,6 +151,89 @@ def test_logical_fock_states(qudit_dim, qudit_num, photon_cutoff, exp_result):
 ])
 def test_qudit_qubit_encoding(qudit_dim, qudit_num, exp_result):
     assert qudit_qubit_encoding(qudit_dim, qudit_num) == exp_result
+
+
+@pytest.mark.parametrize("qubit_num, U, U_label, exp_result", [
+    (3, s*np.array([[1, 1], [1, -1]]), 'H', {
+        'CH_01': np.array([[1, 0, 0, 0, 0, 0, 0, 0],
+                           [0, 1, 0, 0, 0, 0, 0, 0],
+                           [0, 0, 1, 0, 0, 0, 0, 0],
+                           [0, 0, 0, 1, 0, 0, 0, 0],
+                           [0, 0, 0, 0, s, 0, s, 0],
+                           [0, 0, 0, 0, 0, s, 0, s],
+                           [0, 0, 0, 0, s, 0, -1*s, 0],
+                           [0, 0, 0, 0, 0, s, 0, -1*s]], dtype=complex),
+        'CH_10': np.array([[1, 0, 0, 0, 0, 0, 0, 0],
+                           [0, 1, 0, 0, 0, 0, 0, 0],
+                           [0, 0, s, 0, 0, 0, s, 0],
+                           [0, 0, 0, s, 0, 0, 0, s],
+                           [0, 0, 0, 0, 1, 0, 0, 0],
+                           [0, 0, 0, 0, 0, 1, 0, 0],
+                           [0, 0, s, 0, 0, 0, -1*s, 0],
+                           [0, 0, 0, s, 0, 0, 0, -1*s]], dtype=complex),
+        'CH_02': np.array([[1, 0, 0, 0, 0, 0, 0, 0],
+                           [0, 1, 0, 0, 0, 0, 0, 0],
+                           [0, 0, 1, 0, 0, 0, 0, 0],
+                           [0, 0, 0, 1, 0, 0, 0, 0],
+                           [0, 0, 0, 0, s, s, 0, 0],
+                           [0, 0, 0, 0, s, -1*s, 0, 0],
+                           [0, 0, 0, 0, 0, 0, s, s],
+                           [0, 0, 0, 0, 0, 0, s, -1*s]], dtype=complex),
+        'CH_20': np.array([[1, 0, 0, 0, 0, 0, 0, 0],
+                           [0, s, 0, 0, 0, s, 0, 0],
+                           [0, 0, 1, 0, 0, 0, 0, 0],
+                           [0, 0, 0, s, 0, 0, 0, s],
+                           [0, 0, 0, 0, 1, 0, 0, 0],
+                           [0, s, 0, 0, 0, -1*s, 0, 0],
+                           [0, 0, 0, 0, 0, 0, 1, 0],
+                           [0, 0, 0, s, 0, 0, 0, -1*s]], dtype=complex),
+        'CH_12': np.array([[1, 0, 0, 0, 0, 0, 0, 0],
+                           [0, 1, 0, 0, 0, 0, 0, 0],
+                           [0, 0, s, s, 0, 0, 0, 0],
+                           [0, 0, s, -s, 0, 0, 0, 0],
+                           [0, 0, 0, 0, 1, 0, 0, 0],
+                           [0, 0, 0, 0, 0, 1, 0, 0],
+                           [0, 0, 0, 0, 0, 0, s, s],
+                           [0, 0, 0, 0, 0, 0, s, -s]], dtype=complex),
+        'CH_21': np.array([[1, 0, 0, 0, 0, 0, 0, 0],
+                           [0, s, 0, s, 0, 0, 0, 0],
+                           [0, 0, 1, 0, 0, 0, 0, 0],
+                           [0, s, 0, -s, 0, 0, 0, 0],
+                           [0, 0, 0, 0, 1, 0, 0, 0],
+                           [0, 0, 0, 0, 0, s, 0, s],
+                           [0, 0, 0, 0, 0, 0, 1, 0],
+                           [0, 0, 0, 0, 0, s, 0, -s]], dtype=complex),
+        'CCH_012': np.array([[1, 0, 0, 0, 0, 0, 0, 0],
+                            [0, 1, 0, 0, 0, 0, 0, 0],
+                            [0, 0, 1, 0, 0, 0, 0, 0],
+                            [0, 0, 0, 1, 0, 0, 0, 0],
+                            [0, 0, 0, 0, 1, 0, 0, 0],
+                            [0, 0, 0, 0, 0, 1, 0, 0],
+                            [0, 0, 0, 0, 0, 0, s, s],
+                            [0, 0, 0, 0, 0, 0, s, -s]], dtype=complex),
+        'CCH_021': np.array([[1, 0, 0, 0, 0, 0, 0, 0],
+                            [0, 1, 0, 0, 0, 0, 0, 0],
+                            [0, 0, 1, 0, 0, 0, 0, 0],
+                            [0, 0, 0, 1, 0, 0, 0, 0],
+                            [0, 0, 0, 0, 1, 0, 0, 0],
+                            [0, 0, 0, 0, 0, s, 0, s],
+                            [0, 0, 0, 0, 0, 0, 1, 0],
+                            [0, 0, 0, 0, 0, s, 0, -s]], dtype=complex),
+        'CCH_120': np.array([[1, 0, 0, 0, 0, 0, 0, 0],
+                            [0, 1, 0, 0, 0, 0, 0, 0],
+                            [0, 0, 1, 0, 0, 0, 0, 0],
+                            [0, 0, 0, s, 0, 0, 0, s],
+                            [0, 0, 0, 0, 1, 0, 0, 0],
+                            [0, 0, 0, 0, 0, 1, 0, 0],
+                            [0, 0, 0, 0, 0, 0, 1, 0],
+                            [0, 0, 0, s, 0, 0, 0, -s]], dtype=complex),
+    })
+])
+def test_controlled_qubit_gates(qubit_num, U, U_label, exp_result):
+    test_result = controlled_qubit_gates(qubit_num, U, U_label)
+    for exp_label, exp_U in exp_result.items():
+        assert np.allclose(np.eye(2**qubit_num, dtype=complex),
+                           test_result[exp_label].dot(exp_U.T.conj()))
 
 
 def test_intra_qubit_gate_set():

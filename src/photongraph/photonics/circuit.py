@@ -403,7 +403,8 @@ class PostGSG(Circuit):
         Examples:
 
         """
-        assert form in ['qubit', 'qudit']
+        assert form in ['qubit', 'qudit'], "Logical output must be either " \
+                                           "qubit or qudit."
 
         if not qubit_perm:
             qubit_perm = list(range(self._qubit_num))
