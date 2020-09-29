@@ -1,1 +1,2 @@
-from .hypergraph_decomp import qubit_REW_state_check, qubit_hyperedges
+from .graphstates import state_check, graph_state_edges, \
+    state_vector_from_edges

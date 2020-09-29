@@ -8,7 +8,7 @@ import string
 from ..utils import sort_tuples_by_ele, common_member, \
     qudit_qubit_encoding, logical_fock_states_lists
 from .ops import PPS, Inter
-from ..graphs import qubit_REW_state_check, qubit_hyperedges
+from ..graphs import state_check, graph_state_edges
 
 
 class Circuit:
@@ -316,7 +316,7 @@ class PostGSG(Circuit):
 
         self._qubit_state = qubit_state
 
-    def __postselect_logical_state(self, form, Z_projectors, qubit_perm):
+    def __postselect_logical_state(self, form, Z_projectors, qudit_perm):
         """
 
 
@@ -335,17 +335,23 @@ class PostGSG(Circuit):
 
         if form == 'qubit':
             logical_state = self._qubit_state
+            for qs, amp in logical_state.items():
+                if np.all([True if qs[q] == s else False for q, s in
+                           Z_projectors.items()]):
+                    perm_qs = np.array(list(qs))
+                    og_order = list(range(self._qubit_num))
+                    perm_qs[og_order] = perm_qs[qudit_perm]
+                    ps_logical_state_un[tuple(perm_qs)] = amp
+
         elif form == 'qudit':
             logical_state = self._qudit_state
-
-        for qs, amp in logical_state.items():
-            if np.all([True if qs[q] == s else False for q, s in
-                       Z_projectors.items()]):
-
-                perm_qs = np.array(list(qs))
-                og_order = list(range(self._qubit_num))
-                perm_qs[og_order] = perm_qs[qubit_perm]
-                ps_logical_state_un[tuple(perm_qs)] = amp
+            for qs, amp in logical_state.items():
+                if np.all([True if qs[q] == s else False for q, s in
+                           Z_projectors.items()]):
+                    perm_qs = np.array(list(qs))
+                    og_order = list(range(self._qudit_num))
+                    perm_qs[og_order] = perm_qs[qudit_perm]
+                    ps_logical_state_un[tuple(perm_qs)] = amp
 
         norm_const = np.sqrt(
             np.sum(np.square(np.abs(np.array(list(ps_logical_state_un.values()))))))
@@ -355,8 +361,7 @@ class PostGSG(Circuit):
 
         return ps_logical_state
 
-    @staticmethod
-    def __print_state(form, logical_state, Z_projectors):
+    def __print_state(self, form, logical_state, Z_projectors):
         """
 
         Args:
@@ -373,14 +378,30 @@ class PostGSG(Circuit):
                                              if i not in Z_projectors.keys()])
                 reduced_ps_logical_state[reduced_qubit_state] = amp
 
-            if qubit_REW_state_check(reduced_ps_logical_state):
+            ps_qubit_num = len(list(reduced_ps_logical_state.keys())[0])
+
+            if state_check(2, ps_qubit_num, reduced_ps_logical_state, "RU"):
                 print("Logical state is a qubit graph state.")
             else:
                 print("Logical state is NOT a qubit graph state.")
                 print("Number of basis states: ", len(logical_state.keys()),
                       "/", str(2**len(list(logical_state.items())[0][0])))
         elif form == 'qudit':
-            print("Qudit graph state checker not implemented yet.")
+            d = self._qudit_dim
+            reduced_ps_logical_state = {}
+            for qs, amp in logical_state.items():
+                reduced_qubit_state = tuple([q for i, q in enumerate(qs)
+                                             if i not in Z_projectors.keys()])
+                reduced_ps_logical_state[reduced_qubit_state] = amp
+
+            ps_qudit_num = len(list(reduced_ps_logical_state.keys())[0])
+
+            if state_check(d, ps_qudit_num, reduced_ps_logical_state, "RU"):
+                print("Logical state is a qudit RU state.")
+            else:
+                print("Logical state is NOT a qudit RU state.")
+                print("Number of basis states: ", len(logical_state.keys()),
+                      "/", str(2 ** len(list(logical_state.items())[0][0])))
 
         for state, amp in logical_state.items():
             state_str = "|" + ''.join(
@@ -391,7 +412,7 @@ class PostGSG(Circuit):
             print(state_str + "  :  " + amp_str)
 
     def logical_output_state(self, form="qubit", Z_projectors={},
-                             qubit_perm=None):
+                             qudit_perm=None):
         """
         Prints out the logical output state in one of two forms, qubit or qudit.
 
@@ -406,11 +427,14 @@ class PostGSG(Circuit):
         assert form in ['qubit', 'qudit'], "Logical output must be either " \
                                            "qubit or qudit."
 
-        if not qubit_perm:
-            qubit_perm = list(range(self._qubit_num))
+        if not qudit_perm:
+            if form =="qubit":
+                qudit_perm = list(range(self._qubit_num))
+            elif form =="qudit":
+                qudit_perm = list(range(self._qudit_num))
 
         ps_logical_state = self.__postselect_logical_state(form, Z_projectors,
-                                                           qubit_perm)
+                                                           qudit_perm)
         self.__print_state(form, ps_logical_state, Z_projectors)
 
     def display_gs(self, qudit_type_order, form='qubit', Z_projectors={},
@@ -476,7 +500,7 @@ class PostGSG(Circuit):
 
         edges = []
         hyperedges = []
-        for edge in qubit_hyperedges(reduced_ps_qubit_state):
+        for edge in graph_state_edges(2, non_ps_qubit_num, reduced_ps_qubit_state).keys():
             if len(edge) == 2:
                 edges.append(edge)
             elif len(edge)>2:
