@@ -17,6 +17,7 @@ from photongraph.utils import *
 
 s = 1/np.sqrt(2)
 
+
 @pytest.mark.parametrize("qudit_dim, qudit_num, exp_result", [
     (2, 2, [(0, 0), (0, 1), (1, 0), (1, 1)]),
     (4, 4, [(0, 0, 0, 0), (0, 0, 0, 1), (0, 0, 0, 2), (0, 0, 0, 3),
