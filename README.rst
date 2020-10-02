@@ -1,4 +1,4 @@
-.. image:: docs/photongraph_logo.PNG
+.. image:: docs/pg_logo.svg
 
 ===========
 PhotonGraph
