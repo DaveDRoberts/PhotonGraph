@@ -560,3 +560,30 @@ def tensor(*matrices):
     for i in matrices:
         res = np.kron(res, i)
     return res
+
+
+def permute_matrix_rows(U, perm):
+    """
+    Permutes the rows of matrix U according to the a specified permutation
+    The unpermuted matric has the rows in the order [0, 1, 2, 3, 4, 5, 6, 7],
+    a permutation would be [0, 1, 6, 2, 7, 4, 3, 5]. So perm is a list where the
+    number references the row of the matrix and its position in the list signifies its
+    position.
+
+
+    Args:
+      U (numpy.ndarray): Matrix
+      perm (list): permutation - length needs to be equal to the number of rows and the numbers
+                                  in that range must only appear once.
+
+    Returns:
+      (numpy.ndarray): Permutated matrix
+
+    """
+
+    U_copy = U.copy()
+    og_order = list(range(len(perm)))
+
+    U_copy[og_order] = U_copy[perm]
+
+    return U_copy

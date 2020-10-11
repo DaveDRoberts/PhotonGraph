@@ -1,6 +1,331 @@
 import numpy as np
 import itertools as it
 from collections import defaultdict
+import hypernetx as hnx
+
+
+class QuditStateVector:
+    """
+    Class to represent the state vector of a n d-dimensional qudit in the
+    computational basis.
+    Subclasses a dict where keys are the basis states (tuples) and values
+    are complex values representing the probability amplitude.
+
+
+    """
+    def __init__(self):
+        pass
+
+
+class Edge:
+    """
+    Defines a graph edge in the most general sense. Technically this class
+    describes a weighted hyperedge i.e. it can contain 1 or more vertices
+    (qudits) and have an associated weight which is modulo qudit dimension.
+
+
+    """
+    def __init__(self, qudits, weight, qudit_dim):
+        # super().__init__(qudits)
+        self._qudits = frozenset(qudits)
+        self._weight = weight
+        self._qudit_dim = qudit_dim
+
+    def __repr__(self):
+        return 'Edge({}, {})'.format(set(self._qudits), self.weight)
+
+    def __str__(self):
+        return 'Edge({}, {})'.format(set(self._qudits), self.weight)
+
+    @property
+    def qudit_dim(self):
+        return self._qudit_dim
+
+    @property
+    def weight(self):
+        return self._weight
+
+    @property
+    def qudits(self):
+        return self._qudits
+
+    @property
+    def cardinality(self):
+        return len(self._qudits)
+
+    def same_qudits(self, edge):
+        assert isinstance(edge, Edge)
+
+        return self._qudits == edge.qudits
+
+    def add_weight(self, new_weight):
+        self._weight = (self._weight + new_weight) % self._qudit_dim
+
+    def edge_diff(self, edge):
+        """
+        Returns an Edge with the same weight but with qudits removed
+
+        Args:
+            edge:
+
+        Returns:
+
+        """
+        return Edge(self._qudits.difference(edge.qudits), self._weight,
+                    self._qudit_dim)
+
+    def edge_union(self, edge):
+        """
+        Returns an Edge with the same weight but with qudits added
+
+        Args:
+            edge:
+
+        Returns:
+
+        """
+
+        new_weight = self._weight*edge.weight % self._qudit_dim
+        return Edge(self._qudits.union(edge.qudits), new_weight,
+                    self._qudit_dim)
+
+
+class GraphState:
+    """
+
+    Include an attribute dictionary of dictionaries which NX graphs have
+
+    Make an abstract base class for graph transformations then generate
+    specific ones for a graph state e.g.
+
+    Create a graph state visualisation function that will utilise methods from
+    NX and HNX e.g draw cardinality-2 edges as straight lines but all other
+    cardinality edges as "rubber bands" wth HNX.
+
+    Include method to generate GraphState from QuantumStateVector
+
+    Adding a new edge requires checking if there's an edge which contains the
+    same qudits, if so, add the weight of the new one module qudit_dim, else,
+    add the new edge.
+
+    """
+
+    def __init__(self, edge_dict, qudit_dim):
+        """
+        Need to specify the qudit dimension, number of qudits
+
+        """
+
+        self._qudit_dim = qudit_dim
+        self._edges = []
+        self._qudits = set([q for k in edge_dict.keys() for q in k])
+        self._gen_edges_from_dict(edge_dict)
+        self._incidence_dict = {}
+        self._update_inc_dict()
+
+    def _gen_edges_from_dict(self, edge_dict):
+        """
+
+        Args:
+            edge_dict:
+
+        Returns:
+
+        """
+
+        d = self._qudit_dim
+        for e, w in edge_dict.items():
+            self._edges.append(Edge(e, w, d))
+
+    def _update_inc_dict(self):
+        """
+        Creates a new incidence dict each time it is called and generates a
+        new one using the edge list.
+
+        Iterate through the set of edges
+        i) create a key for each new qudit
+        ii) the value for each key is a list containing all the edges that
+        qudit belongs to.
+        iii)
+
+        Returns:
+
+        """
+        inc_dict = defaultdict(list)
+        for edge in self._edges:
+            for qudit in edge.qudits:
+                inc_dict[qudit].append(edge)
+
+        self._incidence_dict = dict(inc_dict)
+
+    @property
+    def edges(self):
+        return self._edges
+
+    @property
+    def qudits(self):
+        return self._qudits
+
+    @property
+    def stab_gens(self):
+        return NotImplementedError()
+
+    def _remove_edge(self, edge_qubits):
+        """
+        Need to find the edge with the specified qubits and remove it
+
+        Args:
+            edge_qubits:
+
+        Returns:
+
+        """
+
+        return NotImplementedError()
+
+    def _add_edges(self, edge_dict):
+        """
+        Will need to check if there is already an edge with the same qudits, if
+        so, just add the weight of this edge.
+
+        if the resultant weight is 0 then remove the edge.
+
+        Args:
+            edge:
+
+        Returns:
+
+        """
+        return NotImplementedError()
+
+    def _qudit_adjacency(self, qudit):
+        """
+        The adjacency of a qudit is the generalisation of the neighbourhood
+        for edges of cardinality greater than 2.
+
+        Select the qudit from the incidence dict, this will retrieve all its
+        edges. Then take the union of
+
+
+        Need to create a set qudit's edges where the qudit is removed from each
+        one.
+
+        Args:
+            qudit:
+
+        Returns:
+
+        """
+
+        adjacency = []
+
+        for edge in self._incidence_dict[qudit]:
+            adjacency.append(edge.edge_diff(set(qudit)))
+
+        return adjacency
+
+    def state_vector(self):
+
+        return NotImplementedError()
+
+    def Z_projection(self, qudit_projs):
+        """
+
+        Args:
+            qudit_projs (dict): Keys are qudits, values are the single-qudit
+            basis state to project onto.
+
+        Returns:
+
+        """
+        return NotImplementedError()
+
+    def fusion(self, gs, qudit_a, qudit_b):
+        """
+
+
+        Args:
+            gs:
+            qudit_a:
+            qudit_b:
+
+        Returns:
+
+        """
+        return NotImplementedError()
+
+    def LC(self, qudit):
+        """
+
+        Args:
+            qudit:
+
+        Returns:
+
+        """
+        return NotImplementedError()
+
+    def edge_LC(self, edge_a, edge_b):
+        """
+
+        Args:
+            edge_a:
+            edge_b:
+
+        Returns:
+
+        """
+        return NotImplementedError()
+
+    def EM(self, edge):
+        """
+
+        Args:
+            edge:
+
+        Returns:
+
+        """
+        return NotImplementedError()
+
+    def ctrl_perm(self, ctrls, targ, weight):
+        """
+
+
+        Args:
+            ctrls (set): Contains all of the control qudits
+            targ (int):
+            weight (int):
+
+        Returns:
+
+        """
+        return NotImplementedError()
+
+    # def __str__(self):
+    #     """
+    #     String representation of graph state
+    #     """
+    #     return NotImplementedError()
+    #
+    # def __repr__(self):
+    #     """
+    #     String representation of graph state
+    #     """
+    #     return NotImplementedError()
+    #
+    # def __eq__(self, other):
+    #     """
+    #     For this it would be good to use pynauty to check if qudit hypergraph
+    #     states are isomorphic using the canonical relabelling and hash.
+    #
+    #     Args:
+    #         other:
+    #
+    #     Returns:
+    #
+    #     """
+    #     return NotImplementedError()
 
 
 def state_check(qudit_dim, qudit_num, state_vector, check_type):
