@@ -230,7 +230,7 @@ class GraphState:
 
     def Z_projection(self, qudit_projs):
         """
-
+        This removes all edges involving the selected qubits
         Args:
             qudit_projs (dict): Keys are qudits, values are the single-qudit
             basis state to project onto.
@@ -252,6 +252,8 @@ class GraphState:
         Returns:
 
         """
+        assert isinstance(gs, GraphState)
+
         return NotImplementedError()
 
     def LC(self, qudit):
@@ -300,6 +302,10 @@ class GraphState:
         Returns:
 
         """
+        return NotImplementedError()
+
+    def draw(self, **params):
+
         return NotImplementedError()
 
     # def __str__(self):
