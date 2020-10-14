@@ -3,6 +3,7 @@ import itertools as it
 from collections import defaultdict
 import networkx as nx
 import hypernetx as hnx
+import matplotlib.pyplot as plt
 
 
 class QuditStateVector:
@@ -225,6 +226,11 @@ class GraphState:
         return self._qudits
 
     @property
+    def incidence_dict(self):
+
+        return self._incidence_dict
+
+    @property
     def stab_gens(self):
         return NotImplementedError()
 
@@ -360,10 +366,8 @@ class GraphState:
         modulo qudit dimension.
 
         Args:
-            edge_qudits:
+            edge_qudits (iterable):
             m (int):
-
-        Returns:
 
         """
 
@@ -403,14 +407,16 @@ class GraphState:
 
     def draw(self, **params):
         """
+        Visualise graph state.
 
+        TODO: Allow visualisation parameters to be passed in.
 
         Args:
             **params:
 
-        Returns:
-
         """
+
+        fig, ax = plt.subplots(1, 1, figsize=(10, 10), dpi=90)
 
         nx_graph = nx.Graph()
 
@@ -426,14 +432,16 @@ class GraphState:
                 hnx_edge_labels['he' + str(i)] = edge.weight
 
         hnx_graph = hnx.Hypergraph(hnx_edge_dict)
-        # nx_graph.update(nodes=range(len(self._qudits)))
+
+        # includes an unconnected qudits
         nx_graph.update(nodes=self._qudits)
-        #node_pos = nx.circular_layout(nx_graph)
-        node_pos = nx.circular_layout(sorted(self._qudits))
+        hnx_graph._add_nodes_from(self._qudits)
+        # ensures qudits are always plotted in the same order
+        node_pos = nx.circular_layout(sorted(self._qudits), scale=3)
 
         nx_edge_labels = nx.get_edge_attributes(nx_graph, 'weight')
 
-        nx.draw_networkx(nx_graph, pos=node_pos,
+        nx.draw_networkx(nx_graph, pos=node_pos, ax=ax,
                          font_size=12,
                          node_color='teal', node_size=1000,
                          edgecolors='black', edge_color='black',
@@ -443,16 +451,14 @@ class GraphState:
             nx.draw_networkx_edge_labels(nx_graph, node_pos,
                                          edge_labels=nx_edge_labels)
 
-        hg_nodes = set([q for e in hnx_edge_dict.values() for q in e])
-        hg_node_pos = {node: pos for node, pos in node_pos.items()
-                       if node in hg_nodes}
-
-        hnx.draw(hnx_graph, pos=hg_node_pos,
-                 edge_labels=hnx_edge_labels,
+        hnx.draw(hnx_graph, pos=node_pos,
+                 edge_labels=hnx_edge_labels, ax=ax,
                  with_edge_labels=self._qudit_dim > 2,
                  with_node_labels=False,
-                 edges_kwargs={'dr': 0.08, 'linewidth': 3},
+                 edges_kwargs={'dr': 0.15, 'linewidth': 3},
                  edge_labels_kwargs={}, label_alpha=1)
+
+        fig.canvas.draw()
 
 
 def state_check(qudit_dim, qudit_num, state_vector, check_type):
