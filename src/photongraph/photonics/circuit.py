@@ -336,7 +336,7 @@ class PostGSG(Circuit):
         if form == 'qubit':
             logical_state = self._qubit_state
             for qs, amp in logical_state.items():
-                if np.all([True if qs[q] == s else False for q, s in
+                if np.all([True if qs[int(q)] == s else False for q, s in
                            Z_projectors.items()]):
                     perm_qs = np.array(list(qs))
                     og_order = list(range(self._qubit_num))
@@ -346,7 +346,7 @@ class PostGSG(Circuit):
         elif form == 'qudit':
             logical_state = self._qudit_state
             for qs, amp in logical_state.items():
-                if np.all([True if qs[q] == s else False for q, s in
+                if np.all([True if qs[int(q)] == s else False for q, s in
                            Z_projectors.items()]):
                     perm_qs = np.array(list(qs))
                     og_order = list(range(self._qudit_num))
@@ -374,7 +374,7 @@ class PostGSG(Circuit):
         if form == 'qubit':
             reduced_ps_logical_state = {}
             for qs, amp in logical_state.items():
-                reduced_qubit_state = tuple([q for i, q in enumerate(qs)
+                reduced_qubit_state = tuple([int(q) for i, q in enumerate(qs)
                                              if i not in Z_projectors.keys()])
                 reduced_ps_logical_state[reduced_qubit_state] = amp
 
@@ -390,7 +390,7 @@ class PostGSG(Circuit):
             d = self._qudit_dim
             reduced_ps_logical_state = {}
             for qs, amp in logical_state.items():
-                reduced_qubit_state = tuple([q for i, q in enumerate(qs)
+                reduced_qubit_state = tuple([int(q) for i, q in enumerate(qs)
                                              if i not in Z_projectors.keys()])
                 reduced_ps_logical_state[reduced_qubit_state] = amp
 
@@ -484,11 +484,11 @@ class PostGSG(Circuit):
         reduced_ps_qubit_state = {}
         for qs, amp in ps_qubit_state.items():
             reduced_qubit_state = tuple([q for i, q in enumerate(qs)
-                                         if i not in Z_projectors.keys()])
+                                         if str(i) not in Z_projectors.keys()])
             reduced_ps_qubit_state[reduced_qubit_state] = amp
 
         all_qubits = range(qubit_num)
-        ps_qubits = list(Z_projectors.keys())
+        ps_qubits = list(map(int, Z_projectors.keys()))
         non_ps_qubits = [q for q in all_qubits if q not in ps_qubits]
 
         ro_qubits = non_ps_qubits + ps_qubits
@@ -541,7 +541,7 @@ class PostGSG(Circuit):
         hg_edge_dict = {str(i) + "he-": he for i, he in enumerate(hyperedges)}
 
         hg = hnx.Hypergraph(hg_edge_dict)
-
+        #hg._add_nodes_from(list(all_qubits))
         hnx.draw(hg, pos=hg_node_pos, with_edge_labels=False,
                  with_node_labels=False,
                  edges_kwargs={'dr': 0.06, 'linewidth': 3})
