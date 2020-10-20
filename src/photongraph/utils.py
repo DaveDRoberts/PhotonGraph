@@ -441,7 +441,7 @@ def efficiency_calc(loss_params):
 
 
 def calc_coin_rate(cov_matrix, qudit_state, qudit_fock_map, loss_params,
-                   units="n"):
+                   UOC_pulse_rate=0.5*10**9, units="n"):
     """
     Calculates the estimated coincidence rate for a particular qudit Fock state.
 
@@ -463,7 +463,7 @@ def calc_coin_rate(cov_matrix, qudit_state, qudit_fock_map, loss_params,
 
     # determine efficiency for each mode
     eta = efficiency_calc(loss_params)
-    UOC_pulse_rate = 0.5 * 10 ** 9
+
 
     coin_prob = 0
     for fock_state in qudit_fock_map[qudit_state]:

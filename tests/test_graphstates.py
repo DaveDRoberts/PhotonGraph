@@ -1,5 +1,5 @@
 import pytest
-from photongraph.graphs.graphstates import *
+from photongraph.graphs.gs_utils import *
 
 state_vector_n3_d3_with_gp = {
     (0, 0, 0): 0.1360827635+0.1360827635j,
@@ -202,8 +202,11 @@ def test_graph_state_edges(d, n, state_vector, exp_result):
     (4, 3, {(1, 2): 2, (0, 1): 1, (0, 1, 2): 3}, state_vector_n3_d4),
     (2, 4, {(2, 3): 1, (1, 3): 1, (1, 2): 1, (0, 1): 1}, state_vector_n4_d2)])
 def test_state_vector_from_edges(d, n, edges, exp_result):
-    # checking if the produced dictionary is correct requires checking each
-    # item in turn
+    """
+    Checking if the produced dictionary is correct requires checking
+    each item in turn
+
+    """
     test_result = state_vector_from_edges(d, n, edges)
 
     assert np.all([np.isclose(test_result[state], exp_amp)
