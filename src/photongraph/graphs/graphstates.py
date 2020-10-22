@@ -239,14 +239,15 @@ class GraphState:
 
 
         """
-        new_edges= self._gen_edges_from_dict(edge_dict)
+        new_edges = self._gen_edges_from_dict(edge_dict)
         self._update_edges(new_edges)
 
     def adjacency(self, qudit):
         """
+        Returns the adjacency of a qudit within the graph.
 
         Args:
-            qudit:
+            qudit (int):
 
         Returns:
 
@@ -327,10 +328,11 @@ class GraphState:
 
     def edge_LC(self, qudit_a, qudit_b):
         """
+        Edge-local complementation a.k.a. pivoting.
 
         Args:
-            edge_a:
-            edge_b:
+            qudit_a:
+            qudit_b:
 
         Returns:
 
@@ -340,19 +342,21 @@ class GraphState:
         self.LC(qudit_b)
         self.LC(qudit_a)
 
-    def EM(self, edge_qudits, m):
+    def EM(self, qudit, m):
         """
-        Multiplies the weight of specified edge by m. The result is
-        modulo qudit dimension.
+        Edge-multiplication is a local Clifford operation with a
+        corresponding graphical transformation:
+        The weight of each edge connected to the specified qudit is
+        multiplied by m modulo qudit dimension.
 
         Args:
-            edge_qudits (iterable):
+            qudit (int):
             m (int):
 
         """
-
-        qudits = frozenset(edge_qudits)
-        self._edges[qudits].mul_weight(m)
+        edges = self._incidence_dict[qudit]
+        for edge in edges:
+            edge.mul_weight(m)
 
     def ctrl_perm(self, targ, ctrls=frozenset(), w=1):
         """
