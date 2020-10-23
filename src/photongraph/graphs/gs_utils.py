@@ -31,12 +31,15 @@ def state_check(qudit_dim, qudit_num, state_vector, check_type):
         amp_zero = np.round(state_vector[tuple(basis_matrix[0])], 10)
         amp_zero_tilda = np.round(1 / amp_zero, 10)
         all_amps_normed = np.round(np.array(
-            [state_vector[tuple(bs)] * amp_zero_tilda for bs in basis_matrix]),
-                                   8)
+            [state_vector[tuple(bs)] * amp_zero_tilda for bs in
+             basis_matrix]),
+            8)
         phis = np.angle(all_amps_normed)
         equal_sup_check = np.all(np.isclose(np.abs(all_amps_normed),
-                                            np.ones(qudit_dim ** qudit_num)))
-        weights_um = np.array(np.round(phis * (qudit_dim / (2 * np.pi)), 6))
+                                            np.ones(
+                                                qudit_dim ** qudit_num)))
+        weights_um = np.array(
+            np.round(phis * (qudit_dim / (2 * np.pi)), 6))
 
         RU_check, weights = np.modf(np.mod(weights_um, qudit_dim))
 
@@ -96,14 +99,16 @@ def graph_state_edges(qudit_dim, qudit_num, state_vector):
     amp_zero_tilda = np.round(1 / amp_zero, 8)
 
     all_amps_normed = np.array(
-        [state_vector[tuple(bs)] * amp_zero_tilda for bs in basis_matrix])
+        [state_vector[tuple(bs)] * amp_zero_tilda for bs in
+         basis_matrix])
     phis = np.angle(all_amps_normed)
 
     weights_um = np.array(np.round(phis * (qudit_dim / (2 * np.pi)), 6))
 
     # check if state is a RU state, if not return empty {}
     RU_check, weights = np.modf(np.mod(weights_um, qudit_dim))
-    equal_sup = np.all(np.isclose(np.abs(all_amps_normed), np.ones(qudit_dim ** qudit_num)))
+    equal_sup = np.all(np.isclose(np.abs(all_amps_normed),
+                                  np.ones(qudit_dim ** qudit_num)))
     if RU_check.any() or (not equal_sup):
         return {}
 
@@ -135,7 +140,8 @@ def graph_state_edges(qudit_dim, qudit_num, state_vector):
 
         if new_edges:
             for edge, edge_weight in new_edges.items():
-                gZ = edge_weight*np.prod(basis_matrix[:, edge], axis=1).flatten()
+                gZ = edge_weight * np.prod(basis_matrix[:, edge],
+                                           axis=1).flatten()
                 weights = np.mod(np.subtract(weights, gZ), qudit_dim)
 
             state_vector_w = {tuple(bs): weight for bs, weight in
@@ -183,7 +189,44 @@ def state_vector_from_edges(qudit_dim, qudit_num, edges):
     # convert from weight form to standard form
     amp = 1 / (np.sqrt(qudit_dim) ** qudit_num)
     state_vector = {
-        state: np.round(amp * np.exp(2j * np.pi * weight / qudit_dim), 8) for
+        state: np.round(amp * np.exp(2j * np.pi * weight / qudit_dim),
+                        8) for
         state, weight in state_vector_w.items()}
 
     return state_vector
+
+
+def qubit_stab_strings(stab_gens):
+    """
+    Generates a simple string representation for stabilizer generators
+    of a 2-uniform qubit graph state.
+
+    Each stabilizer generator must consist of X or X operations only
+
+    Args:
+        stab_gens (dict):
+
+    Returns:
+        (list): Contains all of the stabilizer generators as strings
+
+    """
+    qubit_num = len(stab_gens.keys())
+    stab_strs = []
+    # create a string of I's
+    for q, stab_gen in stab_gens.items():
+        stab_list = ['I'] * qubit_num
+        ops = ['X', 'Z']
+        for op, qs, w in stab_gen:
+            if (op in ops) and len(qs) == 1 and w == 1:
+                stab_list[qs[0]] = op
+            else:
+                raise Exception("Each operation of the stabilizer " +
+                                "generator should be a tuple of the "
+                                "form (label, qubits, weight) where "
+                                "label is 'X' or 'Z' and len(qubits)==1"
+                                "and weight ==1")
+
+        stab_str = "".join(stab_list)
+        stab_strs.append(stab_str)
+
+    return stab_strs

@@ -130,7 +130,7 @@ class GraphState:
 
         edges = {}
         for qudits, weight in edge_dict.items():
-            edge = Edge(qudits, weight, d)
+            edge = Edge(qudits, weight % d, d)
             edges[edge.qudits] = edge
 
         return edges
@@ -222,7 +222,29 @@ class GraphState:
 
     @property
     def stab_gens(self):
-        return NotImplementedError()
+        """
+        Generates the stabilizer generators of te graph state.
+
+        Returns:
+            (dict): Each key is a qudit and its value is a list of
+            tuples where each tuple has the form
+                ('op label', qudits, weight)
+
+            e.g. ('X', [0], 1), ('CZ', [1,2], 1)
+
+        """
+
+        _stab_gens = {}
+
+        for qudit in self._qudits:
+            qudit_stab_gen = [('X', [qudit], 1)]
+            for edge in self._qudit_adjacency(qudit):
+                qs = edge.qudits
+                label = "C" * (len(qs)-1) + "Z"
+                edge.mul_weight(-1)
+                qudit_stab_gen.append((label, list(qs), edge.weight))
+            _stab_gens[qudit] = qudit_stab_gen
+        return _stab_gens
 
     def add_edges(self, edge_dict):
         """
@@ -444,3 +466,15 @@ class GraphState:
                  with_node_labels=False,
                  edges_kwargs={'dr': 0.06, 'linewidth': 3},
                  edge_labels_kwargs={}, label_alpha=1)
+
+    def stabilizer_code(self):
+        """
+        Uses Chris Granade's QECC library.
+
+
+
+        Returns:
+
+        """
+
+        return NotImplementedError
