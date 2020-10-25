@@ -6,7 +6,8 @@ import hypernetx as hnx
 import matplotlib.pyplot as plt
 import string
 from ..utils import sort_tuples_by_ele, common_member, \
-    qudit_qubit_encoding, logical_fock_states_lists
+    qudit_qubit_encoding, logical_fock_states_lists, efficiency_calc, \
+    efficiency_scale_factor
 from .ops import PPS, Inter
 from ..graphs import state_check, graph_state_edges
 
@@ -401,7 +402,7 @@ class PostGSG(Circuit):
             else:
                 print("Logical state is NOT a qudit RU state.")
                 print("Number of basis states: ", len(logical_state.keys()),
-                      "/", str(2 ** len(list(logical_state.items())[0][0])))
+                      "/", str(d ** len(list(logical_state.items())[0][0])))
 
         for state, amp in logical_state.items():
             state_str = "|" + ''.join(
@@ -548,3 +549,57 @@ class PostGSG(Circuit):
 
         plt.show()
 
+    def coincidence_rate(self, loss_params, fock_states=(),
+                         photon_cutoff=1, pulse_rate=0.5*10**9,
+                         units="s"):
+        """
+        Calculates the m-fold coincidence rate for a collection of
+        Fock states which which have at least one photon in each subset
+        of modes which corresponds to a qudit.
+
+        The concidence rate is given by the sum of Fock state
+        probabilities multiplied by the pulse rate of the laser.
+
+        The Fock states can be specifed instead - this can be a much
+        faster way of determining the m-fold coincidence rate if there
+        are only a few with a non-zero amplitude.
+
+        Args:
+
+
+        Returns:
+            string: Formatted string displaying coincidence rate
+
+        """
+
+        eta = efficiency_calc(loss_params)
+
+        if not fock_states:
+            _, fock_states = logical_fock_states_lists(self._qudit_dim,
+                                                       self._qudit_num,
+                                                       photon_cutoff)
+
+        coin_prob = 0.0
+        for fock_state in fock_states:
+
+            num_of_modes = len(fock_state)
+            prob_amp = twq.pure_state_amplitude(
+                np.zeros(2 * num_of_modes), self._cov_matrix, fock_state)
+            prob = (np.abs(prob_amp)) ** 2
+
+            photon_occ = [fock_state[i] for i in
+                          np.array(fock_state).nonzero()[0]]
+            scaled_prob = prob * efficiency_scale_factor(photon_occ,
+                                                         eta)
+            coin_prob += scaled_prob
+
+        coin_rate = pulse_rate * coin_prob
+
+        if units == "s":
+            return '{} Hz'.format(round(coin_rate, 8))
+        elif units == "m":
+            return '{} min^-1'.format(round(coin_rate * 60, 4))
+        elif units == "h":
+            return '{} hour^-1'.format(round(coin_rate * 3600, 4))
+        elif units == "d":
+            return '{} days^-1'.format(round(coin_rate * 3600 * 24, 4))

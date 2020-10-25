@@ -440,55 +440,6 @@ def efficiency_calc(loss_params):
     return eta
 
 
-def calc_coin_rate(cov_matrix, qudit_state, qudit_fock_map, loss_params,
-                   UOC_pulse_rate=0.5*10**9, units="n"):
-    """
-    Calculates the estimated coincidence rate for a particular qudit Fock state.
-
-    TODO: Format outputs with appropriate units
-
-    Args:
-        cov_matrix (numpy.ndarray):
-        qudit_state (tuple):
-        qudit_fock_map (dict):
-        loss_params (dict):
-        units (str):
-
-    Returns:
-        float: coincidence rate in chosen units
-    Examples:
-
-
-    """
-
-    # determine efficiency for each mode
-    eta = efficiency_calc(loss_params)
-
-
-    coin_prob = 0
-    for fock_state in qudit_fock_map[qudit_state]:
-        num_of_modes = len(fock_state)
-        prob_amp = twq.pure_state_amplitude(
-            np.zeros(2 * num_of_modes), cov_matrix, fock_state)
-        prob = (np.abs(prob_amp)) ** 2
-        photon_occ = [fock_state[i] for i in np.array(fock_state).nonzero()[0]]
-        scaled_prob = prob * efficiency_scale_factor(photon_occ, eta)
-        coin_prob += scaled_prob
-
-    coin_rate = UOC_pulse_rate * coin_prob
-
-    if units == "s":
-        return round(coin_rate, 3)
-    elif units == "m":
-        return round(coin_rate * 60, 2)
-    elif units == "h":
-        return round(coin_rate * 3600, 2)
-    elif units == "d":
-        return round(coin_rate * 3600 * 24, 2)
-    else:
-        return coin_rate
-
-
 def sort_tuples_by_ele(groups, n):
     """
     Takes in a list of tuples and sorts them by the value of the nth element

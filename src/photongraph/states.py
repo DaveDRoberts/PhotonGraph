@@ -1,16 +1,26 @@
 
 
 class StateVector:
+    """
+    Represents the state vector for qudit state in the computational
+    basis.
+
+    """
 
     def __init__(self, vector, qudit_num, qudit_dim):
         """
 
-
         Args:
-            vector:
-            qudit_num:
-            qudit_dim:
+            vector (numpy.array): Amplitudes of computational basis
+            qudit_num (int): Number of qudits >=1
+            qudit_dim (int): Qudit dimension >=2
         """
+
+        # check that the length of the vector is compatible with the
+        # number of qudits and qudit dimension.
+
+        # make sure the data type of the np array is complex
+
         self._vector = vector
         self._qudit_num = qudit_num
         self._qudit_dim = qudit_dim
@@ -32,6 +42,18 @@ class StateVector:
         return NotImplementedError
 
     def evolve(self, U):
+        """
+
+        Check that dimensions of U are compatible with the vector.
+        Check that U is unitary
+
+
+        Args:
+            U:
+
+        Returns:
+
+        """
         return NotImplementedError
 
     def inner_product(self, state):
