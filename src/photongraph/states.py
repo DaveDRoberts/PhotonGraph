@@ -2,6 +2,7 @@ import numpy as np
 import itertools as it
 from collections import defaultdict
 from .graphs.graphstates import GraphState
+from . import utils
 
 
 class StateVector:
@@ -267,14 +268,27 @@ class StateVector:
 
         return GraphState(edges, d, qudits)
 
-    def logical_fock_states(self):
+    def logical_fock_states(self, d_enc, n_enc):
         """
+        Generates the fock states which correspond to particular logical
 
+        Args:
+            d_enc (int): Qudit dimension encoding
+            n_enc (int): Qudit number encoding
 
         Returns:
             np.ndarray
         """
-        return NotImplementedError
+
+        lfs = utils.logical_fock_states(d_enc, n_enc)
+        qd_qb = utils.qudit_qubit_encoding(d_enc, n_enc)
+        qb_qd = {v: k for k, v in qd_qb.items()}
+
+        fock_states = []
+        for bs in self._basis_matrix():
+            fock_states.append(lfs[qb_qd[tuple(bs)]][0])
+
+        return fock_states
 
     @property
     def dim(self):

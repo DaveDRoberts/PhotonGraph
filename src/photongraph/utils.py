@@ -125,7 +125,7 @@ def logical_fock_states(qudit_dim, qudit_num, photon_cutoff=1):
     return dict(qudit_fock_map)
 
 
-def logical_fock_states_lists(qudit_dim, qudit_num, photon_cutoff=1):
+def logical_fock_states_lists(qudit_dim, qudit_num):
     """
     Generates all of the Fock states which correspond to logical qudit states
     and returns two arrays: one for logical qudit states and another for the
@@ -141,7 +141,7 @@ def logical_fock_states_lists(qudit_dim, qudit_num, photon_cutoff=1):
         tuple(list, list): First list is all of the qudit basis states and the
         second list contains all of the corresponding Fock states.
     """
-    lfs = logical_fock_states(qudit_dim, qudit_num, photon_cutoff)
+    lfs = logical_fock_states(qudit_dim, qudit_num)
     qudit_basis_states = []
     fock_states = []
     for qds, fs in lfs.items():
