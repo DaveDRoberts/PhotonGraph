@@ -194,39 +194,3 @@ def state_vector_from_edges(qudit_dim, qudit_num, edges):
         state, weight in state_vector_w.items()}
 
     return state_vector
-
-
-def qubit_stab_strings(stab_gens):
-    """
-    Generates a simple string representation for stabilizer generators
-    of a 2-uniform qubit graph state.
-
-    Each stabilizer generator must consist of X or X operations only
-
-    Args:
-        stab_gens (dict):
-
-    Returns:
-        (list): Contains all of the stabilizer generators as strings
-
-    """
-    qubit_num = len(stab_gens.keys())
-    stab_strs = []
-    # create a string of I's
-    for q, stab_gen in stab_gens.items():
-        stab_list = ['I'] * qubit_num
-        ops = ['X', 'Z']
-        for op, qs, w in stab_gen:
-            if (op in ops) and len(qs) == 1 and w == 1:
-                stab_list[qs[0]] = op
-            else:
-                raise Exception("Each operation of the stabilizer " +
-                                "generator should be a tuple of the "
-                                "form (label, qubits, weight) where "
-                                "label is 'X' or 'Z' and len(qubits)==1"
-                                "and weight ==1")
-
-        stab_str = "".join(stab_list)
-        stab_strs.append(stab_str)
-
-    return stab_strs

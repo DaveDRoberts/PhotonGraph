@@ -4,6 +4,7 @@ from collections import defaultdict
 import networkx as nx
 import hypernetx as hnx
 import matplotlib.pyplot as plt
+from ..states import StateVector
 
 
 class Edge:
@@ -103,7 +104,7 @@ class GraphState:
 
     """
 
-    def __init__(self, edge_dict, qudit_dim):
+    def __init__(self, edge_dict, qudit_dim, qudits=()):
         """
         Need to specify the qudit dimension, number of qudits
 
@@ -112,6 +113,7 @@ class GraphState:
         self._qudit_dim = qudit_dim
         self._edges = {}
         self._qudits = set([q for k in edge_dict.keys() for q in k])
+        self._qudits.update(set(qudits))
         self._edges = self._gen_edges_from_dict(edge_dict)
         self._incidence_dict = {}
         self._update_inc_dict()
@@ -276,9 +278,36 @@ class GraphState:
         """
         return self._qudit_adjacency(qudit)
 
+    @property
     def state_vector(self):
+        """
+        Takes the edges of a graph state and generates the associated
+        state vector.
 
-        return NotImplementedError()
+        Returns:
+            pg.StateVector
+        """
+        # generates a matrix where each row is a basis state
+        n = len(self._qudits)
+        d = self._qudit_dim
+
+        basis_matrix = np.array(list(it.product(*[list(range(d))] * n)))
+
+        new_weights = np.zeros(d ** n, dtype=int)
+
+        for edge in self._edges.values():
+            weight = edge.weight
+            qudits = edge.qudits
+            gZ = weight * np.prod(basis_matrix[:, list(qudits)],
+                                  axis=1).flatten()
+
+            new_weights = np.mod(np.add(new_weights, gZ), d)
+
+        amp = 1 / (np.sqrt(d) ** n)
+
+        vector = np.round(amp * np.exp(2j * np.pi * new_weights / d), 8)
+
+        return StateVector(n, d, vector)
 
     def Z_projection(self, qudit_projs):
         """
@@ -466,15 +495,3 @@ class GraphState:
                  with_node_labels=False,
                  edges_kwargs={'dr': 0.06, 'linewidth': 3},
                  edge_labels_kwargs={}, label_alpha=1)
-
-    def stabilizer_code(self):
-        """
-        Uses Chris Granade's QECC library.
-
-
-
-        Returns:
-
-        """
-
-        return NotImplementedError

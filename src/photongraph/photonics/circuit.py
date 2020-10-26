@@ -291,7 +291,7 @@ class PostGSG(Circuit):
 
         qudit_basis_states, fock_states = logical_fock_states_lists(qudit_dim,
                                                                     qudit_num)
-
+        # Use map to apply calc_amp
         def calc_amp(fock_state):
             return twq.pure_state_amplitude(np.zeros(2 * mode_num), cov_matrix,
                                         fock_state)
