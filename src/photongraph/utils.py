@@ -12,6 +12,22 @@ def check_integer(param, min_val):
     assert param > min_val, "Must be a greater than min_val."
 
 
+def basis_matrix(qudit_dim, qudit_num):
+    """
+
+    Args:
+        qudit_dim:
+        qudit_num:
+
+    Returns:
+
+    """
+    n = self._qudit_num
+    d = self._qudit_dim
+
+    return np.array(list(it.product(*[list(range(d))] * n)))
+
+
 def logical_basis(qudit_dim, qudit_num):
     """
         Generates all of the logical basis states for a specific qudit

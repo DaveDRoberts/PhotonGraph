@@ -43,10 +43,16 @@ class StateVector:
 
         state_str = ""
         for i, basis_state in enumerate(self._basis_matrix()):
-            basis_state_str = "|" + ''.join("%s " % ','.join(map(str, str(x))) for x in basis_state)[:-1] + ">"
-            amp_str = str(self._vector[i]) + "\n"
-            state_str += basis_state_str + " : " + amp_str
-        return f'{state_str}'
+            amp = self._vector[i]
+            if not np.isclose(np.abs(amp), 0):
+                basis_state_str = "|" + ''.join("%s " % ','.join(map(str, str(x))) for x in basis_state)[:-1] + ">"
+                amp_str = str(amp) + "\n"
+                state_str += basis_state_str + " : " + amp_str
+
+        if state_str:
+            return f'{state_str}'
+        else:
+            return 'Null Vector'
 
     def __eq__(self, other):
         if np.allclose(self._vector, other.vector):
@@ -116,6 +122,23 @@ class StateVector:
         """
         return NotImplementedError
 
+    def set_amp(self, basis_state, amp):
+        """
+
+        Args:
+            basis_state (list):
+            amp (complex)
+
+        Returns:
+
+        """
+
+        # create dict from basis matrix
+        basis_matrix = self._basis_matrix()
+        basis_dict = {tuple(bs): i for i, bs in enumerate(basis_matrix)}
+
+        self._vector[basis_dict[tuple(basis_state)]] = amp
+
     def state_check(self, check_type):
         """
         Checks if state is LME, RU
@@ -178,7 +201,7 @@ class StateVector:
 
         RU_check, weights = np.modf(np.mod(weights_um, d))
 
-        if RU_check.any():
+        if RU_check.any() or (not equal_sup_check):
             return {}
 
         weights = weights.astype(int)
@@ -246,9 +269,10 @@ class StateVector:
 
     def logical_fock_states(self):
         """
-        Generate an ordered dictionary
-        Returns:
 
+
+        Returns:
+            np.ndarray
         """
         return NotImplementedError
 
