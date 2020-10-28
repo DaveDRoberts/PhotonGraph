@@ -22,8 +22,8 @@ def basis_matrix(qudit_dim, qudit_num):
     Returns:
 
     """
-    n = self._qudit_num
-    d = self._qudit_dim
+    n = qudit_num
+    d = qudit_dim
 
     return np.array(list(it.product(*[list(range(d))] * n)))
 
