@@ -4,8 +4,7 @@
 PhotonGraph
 ===========
 
-PhotonGraph is a Python framework for simulating the logical output state of integrated photonic graph
-state generators. It includes tools for the analysis and applications of photonic graph states.
+A Python module built on the shoulders of giants to serve as a toolkit for photonic graph state exploration, simulation and experimentation.
 
 
 Description
