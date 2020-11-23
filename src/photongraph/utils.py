@@ -6,10 +6,10 @@ import thewalrus.quantum as twq
 from collections import defaultdict
 
 
-def check_integer(param, min_val):
+def check_integer(param, min_val=0):
     """Checks if param is a non-zero integer."""
     assert isinstance(param, int), "Must be an integer."
-    assert param > min_val, "Must be a greater than min_val."
+    assert param >= min_val, "Must be a greater than or equal to min_val."
 
 
 def basis_matrix(qudit_dim, qudit_num):

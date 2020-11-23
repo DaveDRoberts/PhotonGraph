@@ -1,24 +1,25 @@
-from abc import ABC, abstractmethod
-from strawberryfields.ops import BSgate, MZgate, Interferometer, Rgate, S2gate
+import abc
 import numpy as np
+from strawberryfields.ops import BSgate, MZgate, Interferometer, Rgate, S2gate
+
 
 """
 
 """
 
 
-class Op(ABC):
+class Op(abc.ABC):
     def __init__(self, modes):
         self._modes = tuple(sorted(modes))
 
-    @abstractmethod
+    @abc.abstractmethod
     def update(self, **op_params):
         """
 
         """
         raise NotImplementedError()
 
-    @abstractmethod
+    @abc.abstractmethod
     def sf_op(self):
         """Only implemented in subclasses."""
         raise NotImplementedError()

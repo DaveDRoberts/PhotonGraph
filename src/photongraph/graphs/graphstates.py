@@ -1,22 +1,42 @@
-import numpy as np
-import itertools as it
 from collections import defaultdict
-import networkx as nx
-import hypernetx as hnx
+import itertools as it
 import matplotlib.pyplot as plt
-from ..utils import *
+import networkx as nx
+import numpy as np
+import hypernetx as hnx
+
+from ..utils import check_integer, logical_fock_states, qudit_qubit_encoding
 
 
 class Edge:
     """
-    Defines a graph edge in the most general sense. Technically this class
-    describes a weighted hyperedge i.e. it can contain 1 or more vertices
-    (qudits) and have an associated weight which is modulo qudit dimension.
+    Defines a weighted edge which can encompass one or more qudits i.e. it is
+    a weighted qudit hyperedge. Weight is an integer modulo qudit dimension.
 
+    Attributes:
+        _qudits (frozenset): Qudits encompassed by edge.
+        _weight (int): Weight of the edge.
+        _qudit_dim (int): Dimension of each qudit.
+
+    Notes:
+        Investigate non-integer weight edges for more general weighted
+        hypergraph states.
 
     """
+
     def __init__(self, qudits, weight, qudit_dim):
-        # super().__init__(qudits)
+        """
+
+        Args:
+            qudits (iterable): Any iterable containing qudits- qudits are
+                               numbered by integers
+            weight (int): Weight of edge.
+            qudit_dim (int): Dimension of qudits encompassed by edge.
+        """
+
+        check_integer(weight, 0)
+        check_integer(qudit_dim, 2)
+
         self._qudits = frozenset(qudits)
         self._weight = weight
         self._qudit_dim = qudit_dim
@@ -29,55 +49,105 @@ class Edge:
 
     @property
     def qudit_dim(self):
+        """int: Dimension of qudits encompassed by edge."""
         return self._qudit_dim
 
     @property
     def weight(self):
+        """int: Weight of the edge."""
         return self._weight
 
     @property
     def qudits(self):
+        """frozenset: Contains all qudits encompassed by edge."""
         return self._qudits
 
     @property
     def cardinality(self):
+        """int: Number of qudits encompassed by edge."""
         return len(self._qudits)
 
     def same_qudits(self, edge):
+        """
+        Checks if an edge encompasses the same qudits.
+
+        Args:
+            edge (photongraph.Edge): An edge.
+
+        Returns:
+            bool: True if edge encompasses the same qudits.
+        """
+
         assert isinstance(edge, Edge)
 
         return self._qudits == edge.qudits
 
     def add_weight(self, new_weight):
-        self._weight = (self._weight + new_weight) % self._qudit_dim
-
-    def mul_weight(self, m):
-        self._weight = (self._weight * m) % self._qudit_dim
-
-    def edge_diff(self, edge):
         """
-        Returns an Edge with the same weight but with qudits removed.
-        Weight of resultant edge is unchanged.
+        Adds a new weight to the edge's current weight modulo qudit dimension.
 
         Args:
-            edge:
+            new_weight (int): A weight.
+
+        """
+        self._weight = (self._weight + new_weight) % self._qudit_dim
+
+    def mul_weight(self, mul):
+        """
+        Multiplies edge's current weight by an integer modulo qudit dimension.
+
+        Args:
+            mul (int): Multiplier.
 
         Returns:
 
         """
+        self._weight = (self._weight * mul) % self._qudit_dim
+
+    def edge_diff(self, edge):
+        """
+        Returns an Edge with the same weight but with qudits removed.
+
+        Args:
+            edge (photongraph.Edge):
+
+        Returns:
+            photongraph.Edge:
+
+
+        Examples:
+            >>> e1 = Edge([0,1,2], 2, 3)
+            >>> e2 = Edge([2], 1, 3)
+            >>> e1.edge_diff(e2)
+            Edge([0, 1], 2, 3)
+
+        """
+        assert edge.qudit_dim == self._qudit_dim, "Edge must have same qudit " \
+                                                  "dimension"
+
         return Edge(self._qudits.difference(edge.qudits), self._weight,
                     self._qudit_dim)
 
     def edge_union(self, edge):
         """
+        Returns an edge with qudits from both edges with a weight which is the
+        product of the two constituent edges.
 
 
         Args:
             edge:
 
         Returns:
+            photongraph.Edge:
 
+        Example:
+            >>> e1 = Edge([0,1], 2,3)
+            >>> e2 = Edge([2,3], 2,3)
+            >>> e1.edge_union(e2)
+            Edge([0, 1, 2, 3],1, 3)
         """
+        assert edge.qudit_dim == self._qudit_dim, "Edge must have same qudit " \
+                                                  "dimension"
 
         new_weight = self._weight*edge.weight % self._qudit_dim
         return Edge(self._qudits.union(edge.qudits), new_weight,
@@ -86,52 +156,58 @@ class Edge:
 
 class GraphState:
     """
+    Represents the most general form of graph state: a qudit hypergraph state.
+    Qudits have arbitrary prime dimension, edges are weighted with an
+    integer value module qudit dimension and can have a cardinality >1.
 
-    Include an attribute dictionary of dictionaries which NX graphs have
-
-    Make an abstract base class for graph transformations then generate
-    specific ones for a graph state e.g.
-
-    Create a graph state visualisation function that will utilise methods from
-    NX and HNX e.g draw cardinality-2 edges as straight lines but all other
-    cardinality edges as "rubber bands" wth HNX.
-
-    Include method to generate GraphState from QuantumStateVector
-
-    Adding a new edge requires checking if there's an edge which contains the
-    same qudits, if so, add the weight of the new one module qudit_dim, else,
-    add the new edge.
+    Attributes:
+        _qudit_dim (int): Dimension of each qudit.
+        _edges (dict): Each key is a tuple of qubits and value is a Edge object.
+        _qudits (set): Every qudit is denoted by an integer.
+        _incidence_dict (dict): Keys are qudits and values are all the edges
+                                they belong to.
 
     """
 
-    def __init__(self, edge_dict, qudit_dim, qudits=()):
-        """
-        Need to specify the qudit dimension, number of qudits
-
-        """
-
-        self._qudit_dim = qudit_dim
-        self._edges = {}
-        self._qudits = set([q for k in edge_dict.keys() for q in k])
-        self._qudits.update(set(qudits))
-        self._edges = self._gen_edges_from_dict(edge_dict)
-        self._incidence_dict = {}
-        self._update_inc_dict()
-
-    def _gen_edges_from_dict(self, edge_dict):
+    def __init__(self, weighted_edge_dict, qudit_dim, qudits=()):
         """
 
         Args:
-            edge_dict:
+            weighted_edge_dict (dict): Each key is a tuple of qubits and value
+                                       is edge weight.
+            qudit_dim (int): Dimension of each qudit.
+            qudits (iterable): Qudits of graph state
+
+        """
+
+        check_integer(qudit_dim, 2)
+
+        self._qudit_dim = qudit_dim
+        self._edges = {}
+        self._qudits = set([q for k in weighted_edge_dict.keys() for q in k])
+        self._qudits.update(set(qudits))
+        self._edges = self._gen_edges(weighted_edge_dict)
+        self._incidence_dict = {}
+        self._update_inc_dict()
+
+    def _gen_edges(self, weighted_edge_dict):
+        """
+        Takes in dict where each key is a tuple of qubits and value is the edge
+        weight e.g. {(0, 1):1, (2,3):1, (0,1,2):2}.
+
+        Args:
+            weighted_edge_dict (dict): Each key is a tuple of qubits and value
+                                       is edge weight.
 
         Returns:
+            dict: Each key is a tuple of qubits and value is a Edge object.
 
         """
 
         d = self._qudit_dim
 
         edges = {}
-        for qudits, weight in edge_dict.items():
+        for qudits, weight in weighted_edge_dict.items():
             edge = Edge(qudits, weight % d, d)
             edges[edge.qudits] = edge
 
@@ -139,16 +215,7 @@ class GraphState:
 
     def _update_inc_dict(self):
         """
-        Creates a new incidence dict each time it is called and generates a
-        new one using the edge list.
-
-        Iterate through the set of edges
-        i) create a key for each new qudit
-        ii) the value for each key is a list containing all the edges that
-        qudit belongs to.
-        iii)
-
-        Returns:
+        Creates a new incidence dict each time it is called.
 
         """
         inc_dict = defaultdict(list)
@@ -160,14 +227,12 @@ class GraphState:
 
     def _update_edges(self, new_edges):
         """
-        Updates the current edge list by adding new_edges according to
-        rule: if edge already exists add weights module qudit_dim,
-        otherwise add the edge.
+        Updates the edges by adding new_edges according to the rule: if edge
+        already exists add weights modulo qudit_dim otherwise add the edge.
 
         Args:
-            new_edges (dict):
-
-        Returns:
+            new_edges (dict): Each key is a tuple of qubits and value is edge
+                              weight.
 
         """
 
@@ -186,20 +251,20 @@ class GraphState:
     def _qudit_adjacency(self, qudit):
         """
         The adjacency of a qudit is the generalisation of the neighbourhood
-        for edges of cardinality greater than 2.
+        for edges of cardinality greater than 2. The adjacency of a qudit is
+        generated by taking all the edges it belongs to and removing it. The
+        resultant edges form the adjacency of the qudit. The weight of each edge
+        remains unchanged.
 
-        Select the qudit from the incidence dict, this will retrieve all its
-        edges. Then take the union of
-
-
-        Need to create a set qudit's edges where the qudit is removed from each
-        one.
+        e.g. if we have the edges Edge([0,1,2],1,3), Edge([1,2],2,3),
+             Edge([1,3,4],1,3). Then the adjacency of qudit 1 is
+             A(1) = [Edge([0,2],1,3), Edge([2],2,3), Edge([3,4],1,3)]
 
         Args:
-            qudit:
+            qudit (int):
 
         Returns:
-
+            list: Contains Edge objects
         """
         d = self._qudit_dim
         adjacency = []
@@ -211,28 +276,35 @@ class GraphState:
         return adjacency
 
     @property
+    def qudit_dim(self):
+        """int: Dimension of each qudit"""
+        return self._qudit_dim
+
+    @property
     def edges(self):
-        return self._edges.values()
+        """list: Each element is an Edge object."""
+        return list(self._edges.values())
 
     @property
     def qudits(self):
+        """set: Contains all qudits in the graph state."""
         return self._qudits
 
     @property
     def incidence_dict(self):
+        """dict: Keys are tuples of qudits and values are all the edges they
+        belong to e.g. {0:[Edge([0,1],1,2), Edge([0,2],1,2)],
+                        1:[Edge([0,1],1,2)],
+                        2:[Edge([0,2],1,2)]}
+
+        """
         return self._incidence_dict
 
     @property
     def stab_gens(self):
-        """
-        Generates the stabilizer generators of te graph state.
-
-        Returns:
-            (dict): Each key is a qudit and its value is a list of
-            tuples where each tuple has the form
-                ('op label', qudits, weight)
-
-            e.g. ('X', [0], 1), ('CZ', [1,2], 1)
+        """dict: Stabilizer generators of the graph state. Each key is a qudit
+        and its value is a list of tuples where each tuple has the form
+        ('op label', qudits, weight) e.g. ('X', [0], 1), ('CZ', [1,2], 1).
 
         """
 
@@ -246,48 +318,14 @@ class GraphState:
                 edge.mul_weight(-1)
                 qudit_stab_gen.append((label, list(qs), edge.weight))
             _stab_gens[qudit] = qudit_stab_gen
+
         return _stab_gens
-
-    def add_edges(self, edge_dict):
-        """
-        Will need to check if there is already an edge with the same
-        qudits, if so, just add the weight of this edge.
-
-        if the resultant weight is 0 then remove the edge.
-
-        Adding an edge corresponds to the application of a C^kZ gate,
-        where k=0 is a Z-gate which is an edge encompassing one qudit.
-
-        Args:
-            new_edge:
-
-
-        """
-        new_edges = self._gen_edges_from_dict(edge_dict)
-        self._update_edges(new_edges)
-
-    def adjacency(self, qudit):
-        """
-        Returns the adjacency of a qudit within the graph.
-
-        Args:
-            qudit (int):
-
-        Returns:
-
-        """
-        return self._qudit_adjacency(qudit)
 
     @property
     def state_vector(self):
-        """
-        Takes the edges of a graph state and generates the associated
-        state vector.
+        """pg.StateVector: Returns the state vector associated with the graph
+        state."""
 
-        Returns:
-            pg.StateVector
-        """
-        # generates a matrix where each row is a basis state
         n = len(self._qudits)
         d = self._qudit_dim
 
@@ -309,55 +347,39 @@ class GraphState:
 
         return StateVector(n, d, vector)
 
-    def Z_projection(self, qudit_projs):
+    def add_edges(self, edge_dict):
         """
-        This removes all edges involving the selected qubits.
-        Should probably remove the projected qudits from the graph
-        Args:
-            qudit_projs (dict): Keys are qudits, values are the single-qudit
-            basis state to project onto.
+        Will need to check if there is already an edge with the same
+        qudits, if so, just add the weight of this edge.
 
-        Returns:
+        if the resultant weight is 0 then remove the edge.
 
-        """
-        return NotImplementedError()
-
-    def fusion(self, gs, qudit_a, qudit_b):
-        """
-        Performs type-1 fusion between qudit_a of this graph with
-        qudit_b of gs.
-
-        I'm not sure how this operation generalises for qudit
-        hypergraph states. But I'll assume that when I fuse qubit_b with
-        qudit_a that qudit_a inherits the all of the edges of qudit_b
-        and qudit_b becomes a neighbour of qudit_a with edge weight 1.
+        Adding an edge corresponds to the application of a C^kZ gate,
+        where k=0 is a Z-gate which is an edge encompassing one qudit.
 
         Args:
-            gs:
-            qudit_a:
-            qudit_b:
+            new_edge:
 
-        Returns:
 
         """
-        assert isinstance(gs, GraphState)
+        new_edges = self._gen_edges_from_dict(edge_dict)
+        self._update_edges(new_edges)
 
-        # find largest qudit number - add 1 and add that value to each
-        # qudit number in the second graph state
+    def adjacency(self, qudit):
+        """
+        Returns the adjacency of a qudit.
 
-        # Maybe create a method to renumber the qudits
-        # add all the renumbered edges to this graph state
-        # for qudit_a to inherit the edges of qudit_b, just replace
-        # qudit_b with qudit_a in all of qudit_b's edges.
-        # Then add an edge between qudit_a and qubit_b.
+        Args:
+            qudit (int): Qudit in graph state
 
-
-
-        return NotImplementedError()
+        Returns:
+            list: Contains Edge objects
+        """
+        return self._qudit_adjacency(qudit)
 
     def LC(self, qudit):
         """
-        Performs the generalisation of local complementation
+        Edge-pair  the generalisation of local complementation
 
         Args:
             qudit:
@@ -440,6 +462,78 @@ class GraphState:
 
         self._update_edges(new_edges)
 
+    def measure_X(self, qudit, adj_qudit, state=-1):
+        """
+        Performs a Pauli-X measurement on a specified qudit. For this to
+        correspond to a graphical transformation an adjacent qudit must be
+        specified. For standard graph states it doesn't really matter which
+        adjacent qubit is chosen as the resultant graph states are all
+        LU-equivalent.
+
+        Args:
+            qudit (int): Qudit to be measured.
+            adj_qudit (int): Qudit adjacent/neighbour to measured qudit.
+            state (int): Basis states are assigned integers 0 to d-1. If
+            state==-1 then state is chosen randomly.
+
+        """
+        return NotImplementedError()
+
+    def measure_Y(self, qudit, state=-1):
+        """
+        Performs a Pauli-Y measurement on a specified qudit.
+
+        Args:
+            qudit (int): Qudit to be measured.
+            state (int): Basis states are assigned integers 0 to d-1. If
+                         state==-1 then state is chosen randomly.
+
+        """
+
+        return NotImplementedError()
+
+    def measure_Z(self, qudit, state=None):
+        """
+        Performs a Pauli-Z measurement on a specified qudit.
+
+        Args:
+            qudit (int): Qudit to be measured.
+            state (int): Basis states are assigned integers 0 to d-1. If
+                         state==-1 then state is chosen randomly.
+
+        """
+        return NotImplementedError()
+
+    def fusion(self, gs, qudit_a, qudit_b):
+        """
+        Performs type-1 fusion between qudit_a of this graph with
+        qudit_b of gs.
+
+        I'm not sure how this operation generalises for qudit
+        hypergraph states. But I'll assume that when I fuse qubit_b with
+        qudit_a that qudit_a inherits the all of the edges of qudit_b
+        and qudit_b becomes a neighbour of qudit_a with edge weight 1.
+
+        Args:
+            gs:
+            qudit_a:
+            qudit_b:
+
+        Returns:
+
+        """
+        assert isinstance(gs, GraphState)
+
+        # find largest qudit number - add 1 and add that value to each
+        # qudit number in the second graph state
+
+        # Maybe create a method to renumber the qudits
+        # add all the renumbered edges to this graph state
+        # for qudit_a to inherit the edges of qudit_b, just replace
+        # qudit_b with qudit_a in all of qudit_b's edges.
+        # Then add an edge between qudit_a and qubit_b.
+        return NotImplementedError()
+
     def draw(self, ax=None, **params):
         """
         Visualise graph state.
@@ -499,8 +593,14 @@ class GraphState:
 
 class StateVector:
     """
-    Represents the state vector for qudit state in the computational
-    basis.
+    Represents the state vector for a pure multi-qudit state in the
+    computational basis. Amplitudes are stored in an array in the canonical
+    order e.g. for 2 qubits we have (a_{00}, a_{01}, a_{10}, a_{11}).
+
+    Attributes:
+          _qudit_num (int):
+          _qudit_dim (int):
+          _vector
 
     """
 
@@ -524,8 +624,7 @@ class StateVector:
         if not (vector is None):
             self._vector = vector
         else:
-            self._vector = np.zeros(qudit_dim**qudit_num,
-                                   dtype=np.complex128)
+            self._vector = np.zeros(qudit_dim**qudit_num, dtype=np.complex128)
 
     def __repr__(self):
         n = self._qudit_num
@@ -672,8 +771,8 @@ class StateVector:
 
     def _graph_state_edges(self):
         """
-        This return s GraphState object if the state vector is a graph
-        state.
+        Generates the graph state edges, returns an empty dict if state
+        vector doesn't correspond to graph state.
 
         Returns:
 
@@ -772,8 +871,8 @@ class StateVector:
             np.ndarray
         """
 
-        lfs = utils.logical_fock_states(d_enc, n_enc)
-        qd_qb = utils.qudit_qubit_encoding(d_enc, n_enc)
+        lfs = logical_fock_states(d_enc, n_enc)
+        qd_qb = qudit_qubit_encoding(d_enc, n_enc)
         qb_qd = {v: k for k, v in qd_qb.items()}
 
         fock_states = []
