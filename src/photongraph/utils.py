@@ -2,7 +2,6 @@ import numpy as np
 import itertools as it
 import math
 import scipy
-import thewalrus.quantum as twq
 from collections import defaultdict
 
 
@@ -14,14 +13,29 @@ def check_integer(param, min_val=0):
 
 def basis_matrix(qudit_dim, qudit_num):
     """
+        Generates a matrix where the basis states are the rows in canonical
+        order i.e. for n=3 and d=2
+        np.array([[0,0,0],
+                  [0,0,1],
+                  [0,1,0],
+                  [0,1,1],
+                  [1,0,0],
+                  [1,0,1],
+                  [1,1,0],
+                  [1,1,1]])
 
-    Args:
-        qudit_dim:
-        qudit_num:
+        Args:
+            qudit_dim (int);
+            qudit_num (int):
 
-    Returns:
+        Returns:
+            numpy.array:
 
-    """
+        Examples:
+
+
+
+        """
     n = qudit_num
     d = qudit_dim
 
@@ -590,3 +604,23 @@ def qubit_stab_strings(stab_gens):
         stab_strs.append(stab_str)
 
     return stab_strs
+
+
+def is_prime(n):
+    """
+    Checks if an integer n is prime.
+
+    Code taken from:
+    https://stackoverflow.com/questions/4114167/
+    checking-if-a-number-is-a-prime-number-in-python
+
+    Args:
+        n (int):
+
+    Returns:
+
+    """
+    check_integer(n)
+
+    return n > 1 and all(n % i for i in it.islice(it.count(2),
+                                                  int(math.sqrt(n)-1)))

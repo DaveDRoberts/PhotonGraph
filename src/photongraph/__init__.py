@@ -2,6 +2,7 @@
 from .photonics.circuit import Circuit, PostGSG
 from .photonics.ops import BS, PS, Inter, Fusion, MZI, PPS
 from .graphs import GraphState, StateVector
+from .graphs.gs_utils import gs_from_sv
 from . import utils
 from pkg_resources import get_distribution, DistributionNotFound
 
