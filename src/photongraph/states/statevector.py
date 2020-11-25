@@ -14,7 +14,7 @@ class StateVector:
     Attributes:
           _qudit_num (int):
           _qudit_dim (int):
-          _vector
+          _vector (numpy.array):
 
     """
 
