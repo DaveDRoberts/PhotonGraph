@@ -59,6 +59,22 @@ class GraphState:
         self._incidence_dict = {}
         self.__update_inc_dict()
 
+    def __eq__(self, other):
+
+        assert isinstance(other, self.__class__)
+        same_qudits = self.qudits == other.qudits
+        same_edges = self.edges == other.edges
+
+        return same_qudits and same_edges
+
+    def __repr__(self):
+        return 'GraphState(d = {}, n = {})'.format(self._qudit_dim,
+                                                   len(self._qudits))
+
+    def __str__(self):
+        return 'GraphState(d = {}, n = {})'.format(self._qudit_dim,
+                                                   len(self._qudits))
+
     def __gen_edges(self, weighted_edge_dict):
         """
         Takes in dict where each key is a tuple of qubits and value is the edge

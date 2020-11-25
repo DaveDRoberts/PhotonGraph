@@ -34,6 +34,14 @@ class Edge:
         self._weight = weight
         self._qudit_dim = qudit_dim
 
+    def __eq__(self, other):
+        assert isinstance(other, self.__class__)
+        same_weight = self.weight == other.weight
+        same_qudit_dim = self.qudit_dim == other.qudit_dim
+        same_qudits = self.qudits == other.qudits
+
+        return same_weight and same_qudit_dim and same_qudits
+
     def __repr__(self):
         return 'Edge({}, {})'.format(set(self._qudits), self.weight)
 
