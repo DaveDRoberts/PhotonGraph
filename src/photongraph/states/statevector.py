@@ -22,7 +22,7 @@ class StateVector:
         """
 
         Args:
-            vector (numpy.array): Amplitudes of computational basis
+            vector (numpy.array): Amplitudes of computational basis states
             qudit_num (int): Number of qudits >=1
             qudit_dim (int): Qudit dimension >=2
         """
@@ -72,27 +72,28 @@ class StateVector:
 
     @property
     def qudit_dim(self):
+        """int: Dimension of qudit."""
         return self._qudit_dim
 
     @property
     def qudit_num(self):
+        """int: Number of qudits."""
         return self._qudit_num
 
     @property
     def vector(self):
+        """numpy.array: 1D Array to hold complex probability amplitudes"""
         return self._vector
 
     def evolve(self, U):
         """
-
-        Check that dimensions of U are compatible with the vector.
-        Check that U is unitary
-
+        Applies a unitary matrix to the vector.
 
         Args:
-            U:
+            U (numpy.ndarray): Unitary matrix.
 
-        Returns:
+       Todo: Check that U is unitary and that dimensions are compatible with
+             vector.
 
         """
 
@@ -100,21 +101,23 @@ class StateVector:
 
     def inner_product(self, state):
         """
+        Takes the inner product between itself and some other state.
 
-        Check that state is compatible  with state vector
-        Check that state is type StateVector
         Args:
-            state (numpy.array):
+            state (StateVector): State vector.
 
         Returns:
+            complex: A complex, scalar value.
 
         """
+        assert isinstance(state, self.__class__)
+        assert self._vector.shape == state.vector.shape
+
         return state.T.conj() @ self._vector
 
     def normalize(self):
         """
-
-        Returns:
+        Normalizes the probability amplitudes of the state vector.
 
         """
 
@@ -122,21 +125,13 @@ class StateVector:
         norm_const = np.sqrt(np.sum(np.square(np.abs(v))))
         self._vector = self._vector / norm_const
 
-    def schmidt_measure(self):
-        """
-        Computes the Schmidt measure for the state vector
-
-        Returns:
-
-        """
-        return NotImplementedError
-
     def set_amp(self, basis_state, amp):
         """
+        Sets the amplitude of a specified computational basis state.
 
         Args:
-            basis_state (list):
-            amp (complex)
+            basis_state (list): Computational basis state.
+            amp (complex): Complex probability amplitude.
 
         Returns:
 
@@ -151,7 +146,8 @@ class StateVector:
 
     def logical_fock_states(self, d_enc, n_enc):
         """
-        Generates the fock states which correspond to particular logical
+        Generates the fock states which correspond to particular logical states
+        for a specified photon encoding.
 
         Args:
             d_enc (int): Qudit dimension encoding
