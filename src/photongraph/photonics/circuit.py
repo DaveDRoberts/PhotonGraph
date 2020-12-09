@@ -576,8 +576,7 @@ class PostGSG(Circuit):
 
         if not fock_states:
             _, fock_states = logical_fock_states_lists(self._qudit_dim,
-                                                       self._qudit_num,
-                                                       photon_cutoff)
+                                                       self._qudit_num)
 
         coin_prob = 0.0
         for fock_state in fock_states:

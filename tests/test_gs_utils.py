@@ -3,7 +3,7 @@ from photongraph.graphs.gs_utils import *
 from photongraph.states.statevector import StateVector
 from photongraph import GraphState
 
-vector_n3_d3_gp = np.array([0.1360827635 + 0.1360827635j,
+vector_d3_n3_gp = np.array([0.1360827635 + 0.1360827635j,
                             0.1360827635 + 0.1360827635j,
                             0.1360827635 + 0.1360827635j,
                             0.1360827635 + 0.1360827635j,
@@ -31,7 +31,7 @@ vector_n3_d3_gp = np.array([0.1360827635 + 0.1360827635j,
                             -0.1858925105 + 0.0498097488j,
                             -0.1858925105 + 0.0498097488j], dtype="complex128")
 
-vector_n3_d3_ru_not_gs = np.array([0.1360827635 + 0.1360827635j,
+vector_d3_n3_ru_not_gs = np.array([0.1360827635 + 0.1360827635j,
                                    0.0498097488 - 0.1858925105j,
                                    0.1360827635 + 0.1360827635j,
                                    -0.1858925105 + 0.0498097488j,
@@ -60,7 +60,7 @@ vector_n3_d3_ru_not_gs = np.array([0.1360827635 + 0.1360827635j,
                                    0.1360827635 + 0.1360827635j],
                                   dtype="complex128")
 
-vector_n3_d3_lme_not_ru = np.array([0.0272420087 - 0.1905122306j,
+vector_d3_n3_lme_not_ru = np.array([0.0272420087 - 0.1905122306j,
                                     -0.1620693966 + 0.1037812494j,
                                     -0.1699338368 - 0.0903301066j,
                                     0.059781768 - 0.1829294325j,
@@ -89,12 +89,12 @@ vector_n3_d3_lme_not_ru = np.array([0.0272420087 - 0.1905122306j,
                                     -0.102339975 + 0.1629833284j],
                                    dtype='complex128')
 
-vector_n4_d4_ghz = np.zeros(256, dtype='complex128')
-vector_n4_d4_ghz[0] = 1
-vector_n4_d4_ghz[-1] = 1
-vector_n4_d4_ghz = 1 / np.sqrt(2) * vector_n4_d4_ghz
+vector_d4_n4_ghz = np.zeros(256, dtype='complex128')
+vector_d4_n4_ghz[0] = 1
+vector_d4_n4_ghz[-1] = 1
+vector_d4_n4_ghz = 1 / np.sqrt(2) * vector_d4_n4_ghz
 
-vector_n3_d4 = np.array([(0.125 + 0j), (0.125 + 0j), (0.125 + 0j), (0.125 + 0j),
+vector_d4_n3 = np.array([(0.125 + 0j), (0.125 + 0j), (0.125 + 0j), (0.125 + 0j),
                          (0.125 + 0j), (-0.125 + 0j), (0.125 + 0j),
                          (-0.125 + 0j),
                          (0.125 + 0j), (0.125 + 0j), (0.125 + 0j), (0.125 + 0j),
@@ -122,35 +122,35 @@ vector_n3_d4 = np.array([(0.125 + 0j), (0.125 + 0j), (0.125 + 0j), (0.125 + 0j),
                          (0.125 + 0j)],
                         dtype='complex128')
 
-vector_n4_d2 = np.array([0.25, 0.25, 0.25, -0.25,
+vector_d2_n4 = np.array([0.25, 0.25, 0.25, -0.25,
                          0.25, -0.25, -0.25, -0.25,
                          0.25, 0.25, 0.25, -0.25,
                          -0.25, 0.25, 0.25, 0.25], dtype='complex128')
 
 
 @pytest.mark.parametrize('n, d, vector, check_type, exp_result',
-                         [(3, 3, vector_n3_d3_gp, 'LME', True),
-                          (3, 3, vector_n3_d3_gp, 'RU', True),
-                          (3, 3, vector_n3_d3_ru_not_gs, 'RU', True),
-                          (3, 3, vector_n3_d3_lme_not_ru, 'RU', False),
-                          (3, 3, vector_n3_d3_lme_not_ru, 'LME', True),
-                          (4, 4, vector_n4_d4_ghz, 'RU', False)])
+                         [(3, 3, vector_d3_n3_gp, 'LME', True),
+                          (3, 3, vector_d3_n3_gp, 'RU', True),
+                          (3, 3, vector_d3_n3_ru_not_gs, 'RU', True),
+                          (3, 3, vector_d3_n3_lme_not_ru, 'RU', False),
+                          (3, 3, vector_d3_n3_lme_not_ru, 'LME', True),
+                          (4, 4, vector_d4_n4_ghz, 'RU', False)])
 def test_state_check(n, d, vector, check_type, exp_result):
     assert state_check(StateVector(n, d, vector), check_type) == exp_result
 
 
 @pytest.mark.parametrize("n, d, vector, weighted_edge_dict", [
-    (3, 3, vector_n3_d3_gp, {(1, 2): 2, (0, 1): 1, (0, 1, 2): 2}),
-    (3, 4, vector_n3_d4, {(1, 2): 2, (0, 1): 1, (0, 1, 2): 3}),
-    (4, 2, vector_n4_d2, {(2, 3): 1, (1, 3): 1, (1, 2): 1, (0, 1): 1})])
+    (3, 3, vector_d3_n3_gp, {(1, 2): 2, (0, 1): 1, (0, 1, 2): 2}),
+    (3, 4, vector_d4_n3, {(1, 2): 2, (0, 1): 1, (0, 1, 2): 3}),
+    (4, 2, vector_d2_n4, {(2, 3): 1, (1, 3): 1, (1, 2): 1, (0, 1): 1})])
 def test_gs_from_sv(n, d, vector, weighted_edge_dict):
     assert gs_from_sv(StateVector(n, d, vector)) == \
            GraphState(weighted_edge_dict, d)
 
 
 @pytest.mark.parametrize("n, d, vector, exception", [
-    (3, 3, vector_n3_d3_ru_not_gs, AssertionError),
-    (4, 4, vector_n4_d4_ghz, AssertionError)])
+    (3, 3, vector_d3_n3_ru_not_gs, AssertionError),
+    (4, 4, vector_d4_n4_ghz, AssertionError)])
 def test_gs_from_sv_exceptions(n, d, vector, exception):
     with pytest.raises(exception) as not_gs:
         gs_from_sv(StateVector(n, d, vector))

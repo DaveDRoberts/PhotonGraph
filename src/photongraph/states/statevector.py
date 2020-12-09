@@ -1,5 +1,3 @@
-from collections import defaultdict
-import itertools as it
 import numpy as np
 
 from ..utils import logical_fock_states, basis_matrix, qudit_qubit_encoding
@@ -65,10 +63,13 @@ class StateVector:
             return 'Null Vector'
 
     def __eq__(self, other):
-        if np.allclose(self._vector, other.vector):
-            return True
-        else:
-            return False
+        assert isinstance(other, self.__class__)
+
+        same_vector = np.allclose(self._vector, other.vector)
+        same_qudit_dim = other.qudit_dim == self._qudit_dim
+        same_qudit_num = other.qudit_num == self._qudit_num
+
+        return same_vector and same_qudit_dim and same_qudit_num
 
     @property
     def qudit_dim(self):

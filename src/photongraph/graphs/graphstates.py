@@ -14,7 +14,7 @@ class GraphState:
     """
     Represents the most general form of graph state: a qudit hypergraph state.
     Qudits have arbitrary prime dimension, edges are weighted with an
-    integer value module qudit dimension and can have a cardinality >1.
+    integer value module qudit dimension and can have a cardinality >=1.
 
     Attributes:
         _qudit_dim (int): Dimension of each qudit.
@@ -34,6 +34,9 @@ class GraphState:
 
     Todo: Investigate if transformation rules apply to non-prime dimensional
           qudits.
+
+    Todo: Find a way to make sure that the qudit dimension and
+          weighted_edge_dict are compatible.
 
 
     """
@@ -63,7 +66,7 @@ class GraphState:
 
         assert isinstance(other, self.__class__)
         same_qudits = self.qudits == other.qudits
-        same_edges = self.edges == other.edges
+        same_edges = self._edges == other._edges
 
         return same_qudits and same_edges
 
@@ -239,29 +242,6 @@ class GraphState:
 
         return StateVector(n, d, vector)
 
-    @property
-    def graph_hash(self):
-        """str: Hash of graph with canonical labelling
-
-        Todo: This requires pynauty and gsc
-        """
-        return NotImplementedError
-
-    def add_edges(self, weighted_edge_dict):
-        """
-        Adds specified edges to graph state. If graph state contains any edges
-        which encompass the same qudits their weights are added modulo qudit
-        dimension, otherwise the edge is added. If the any edges have weight 0
-        they are removed from the graph state.
-
-        Args:
-            weighted_edge_dict: Each key is a tuple of qubits and value is edge
-                                weight.
-
-        """
-        new_edges = self.__gen_edges(weighted_edge_dict)
-        self.__update_edges(new_edges)
-
     def adjacency(self, qudit):
         """
         Returns the adjacency of a qudit.
@@ -286,6 +266,21 @@ class GraphState:
         """
         return list(set([q for edge in self.__qudit_adjacency(qudit)
                          for q in edge.qudits]))
+
+    def add_edges(self, weighted_edge_dict):
+        """
+        Adds specified edges to graph state. If graph state contains any edges
+        which encompass the same qudits their weights are added modulo qudit
+        dimension, otherwise the edge is added. If the any edges have weight 0
+        they are removed from the graph state.
+
+        Args:
+            weighted_edge_dict: Each key is a tuple of qubits and value is edge
+                                weight.
+
+        """
+        new_edges = self.__gen_edges(weighted_edge_dict)
+        self.__update_edges(new_edges)
 
     def EPC(self, qudit):
         """

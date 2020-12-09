@@ -1,8 +1,8 @@
 ===========
-photongraph
+PhotonGraph
 ===========
 
-This is the documentation of **photongraph**.
+This is the documentation of **PhotonGraph**.
 
 .. note::
 

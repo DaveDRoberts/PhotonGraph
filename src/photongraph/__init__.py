@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 from .photonics.circuit import Circuit, PostGSG
 from .photonics.ops import BS, PS, Inter, Fusion, MZI, PPS
-from .graphs import GraphState, StateVector
+from .graphs import GraphState
 from .graphs.gs_utils import gs_from_sv
+from .states.statevector import StateVector
 from . import utils
 from pkg_resources import get_distribution, DistributionNotFound
 
