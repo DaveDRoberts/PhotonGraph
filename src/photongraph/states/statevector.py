@@ -86,6 +86,11 @@ class StateVector:
         """numpy.array: 1D Array to hold complex probability amplitudes"""
         return self._vector
 
+    @property
+    def is_normalized(self):
+        """bool: checks if state vector is normalised"""
+        return np.isclose(np.sum(np.square(np.abs(self._vector))), 1.0)
+
     def evolve(self, U):
         """
         Applies a unitary matrix to the vector.
@@ -111,10 +116,11 @@ class StateVector:
             complex: A complex, scalar value.
 
         """
+
         assert isinstance(state, self.__class__)
         assert self._vector.shape == state.vector.shape
 
-        return state.T.conj() @ self._vector
+        return state.vector.T.conj() @ self._vector
 
     def normalize(self):
         """
@@ -125,6 +131,27 @@ class StateVector:
         v = self._vector
         norm_const = np.sqrt(np.sum(np.square(np.abs(v))))
         self._vector = self._vector / norm_const
+
+    def get_amp(self, basis_state):
+        """
+        Gets the amplitude of a specified computational basis state.
+
+        Args:
+            basis_state (list): Computational basis state.
+
+        Returns:
+            complex: Complex probability amplitude.
+
+        Returns:
+
+        """
+        d = self._qudit_dim
+        n = self._qudit_num
+        # create dict from basis matrix
+        basis_mat = basis_matrix(d, n)
+        basis_dict = {tuple(bs): i for i, bs in enumerate(basis_mat)}
+
+        return self._vector[basis_dict[tuple(basis_state)]]
 
     def set_amp(self, basis_state, amp):
         """

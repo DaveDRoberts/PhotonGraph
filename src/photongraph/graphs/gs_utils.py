@@ -72,6 +72,8 @@ def gs_from_sv(state_vector):
     d = state_vector.qudit_dim
     qudits = list(range(n))
 
+    assert state_vector.is_normalized, "State vector is not normalized."
+
     v = np.copy(state_vector.vector)
     amp_zero = v[0]
     amp_zero_tilda = np.round(1 / amp_zero, 10)
