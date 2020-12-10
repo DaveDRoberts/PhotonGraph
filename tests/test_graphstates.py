@@ -716,8 +716,17 @@ def test_measure_Y():
     pass
 
 
-def test_measure_Z():
-    pass
+@pytest.mark.parametrize('edge_dict, qudit_dim, qudit, state, new_edge_dict', [
+    (edge_dict_d2_n7, 2, 0, 0, {(1, 2, 6): 1, (3, 4, 5): 1}),
+    (edge_dict_d2_n7, 2, 0, 1, {(1, 2, 6): 1, (3, 4, 5): 1, (1, 3): 1}),
+    (edge_dict_d3_n4, 3, 0, 0, {(1, 2): 1, (2, 3): 1, (1, 2, 3): 2}),
+    (edge_dict_d3_n4, 3, 0, 1, {(1, 2): 2, (2, 3): 1, (1, 2, 3): 2, (1,): 2}),
+    (edge_dict_d3_n4, 3, 0, 2, {(2, 3): 1, (1, 2, 3): 2, (1,): 1}),
+])
+def test_measure_Z(edge_dict, qudit_dim, qudit, state, new_edge_dict):
+    gs = GraphState(edge_dict, qudit_dim)
+    gs.measure_Z(qudit, state)
+    assert gs == GraphState(new_edge_dict, qudit_dim)
 
 
 def test_fusion():

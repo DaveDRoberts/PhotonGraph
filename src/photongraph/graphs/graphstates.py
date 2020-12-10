@@ -132,7 +132,8 @@ class GraphState:
                     del self._edges[new_edge.qudits]
 
             else:
-                self._edges[new_edge.qudits] = new_edge
+                if new_edge.weight:
+                    self._edges[new_edge.qudits] = new_edge
 
         self.__update_inc_dict()
 
@@ -412,7 +413,7 @@ class GraphState:
 
         self.__update_edges(new_edges)
 
-    def measure_X(self, qudit, adj_qudit, state=-1):
+    def measure_X(self, qudit, adj_qudit, state=0):
         """
         Performs a Pauli-X measurement on a specified qudit. For this to
         correspond to a graphical transformation an adjacent qudit must be
@@ -429,7 +430,7 @@ class GraphState:
         """
         return NotImplementedError()
 
-    def measure_Y(self, qudit, state=-1):
+    def measure_Y(self, qudit, state=0):
         """
         Performs a Pauli-Y measurement on a specified qudit.
 
@@ -442,17 +443,36 @@ class GraphState:
 
         return NotImplementedError()
 
-    def measure_Z(self, qudit, state=None):
+    def measure_Z(self, qudit, state=0):
         """
         Performs a Pauli-Z measurement on a specified qudit.
 
         Args:
             qudit (int): Qudit to be measured.
-            state (int): Basis states are assigned integers 0 to d-1. If
-                         state==-1 then state is chosen randomly.
+            state (int): Basis states are assigned integers 0 to d-1.
 
         """
-        return NotImplementedError()
+
+        valid_states = [i for i in range(self._qudit_dim)]
+        assert state in valid_states, \
+            "State must be one of {}".format(valid_states)
+
+        assert len(self._qudits) > 1, 'Graph state must have more than 1 qudit.'
+
+        qudit_adj = self.adjacency(qudit)
+        edges_to_remove = self.incidence_dict[qudit]
+
+        for edge in edges_to_remove:
+            del self._edges[edge.qudits]
+
+        new_edges = {}
+
+        for edge in qudit_adj:
+            edge.mul_weight(state)
+            new_edges[edge.qudits] = edge
+
+        self.__update_edges(new_edges)
+        self._qudits.remove(qudit)
 
     def fusion(self, gs, qudit_a, qudit_b):
         """
@@ -485,7 +505,8 @@ class GraphState:
             **params:
 
         TODO: Allow visualisation parameters to be passed in.
-        TODO: Fix cropping issues
+        TODO: Fix cropping issues: could apply a white hyperedge to all qudits,
+              this wouldn't be seen and might fix the cropping issue.
 
         """
 

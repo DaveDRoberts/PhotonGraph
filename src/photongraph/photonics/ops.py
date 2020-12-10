@@ -3,20 +3,18 @@ import numpy as np
 from strawberryfields.ops import BSgate, MZgate, Interferometer, Rgate, S2gate
 
 
-"""
-
-"""
-
-
 class Op(abc.ABC):
+    """
+    An abstract base class which serves as a template for photonic operators.
+    Utilises the Strawberry Fields (SF) photonic operators.
+
+    """
     def __init__(self, modes):
         self._modes = tuple(sorted(modes))
 
     @abc.abstractmethod
     def update(self, **op_params):
-        """
-
-        """
+        """Only implemented in subclasses."""
         raise NotImplementedError()
 
     @abc.abstractmethod
@@ -26,13 +24,13 @@ class Op(abc.ABC):
 
     @property
     def modes(self):
+        """tuple: contains modes that operator acts on in ascending order."""
         return self._modes
 
 
 class BS(Op):
     """
-    params for this object should be reflectivity phase and BS convention
-    Want to use the SF gate ops
+    Beamsplitter operator
 
     """
 
@@ -60,6 +58,7 @@ class BS(Op):
 
     @property
     def sf_params(self):
+        """dict: Contains parameters for SF operator."""
         return self._sf_params
 
     def update(self, **op_params):
@@ -276,12 +275,19 @@ class Inter(Op):
 
 
 class Fusion(MZI):
+    """
+    A MZI set to swap optical modes.
 
+    Swaps modes to "push" particular logical Fock states out of
+    postselection. In certain situations this has the effective performing a
+    fusion operation under postselection.
+
+    """
     def __init__(self, modes, status):
         """
 
         Args:
-            modes:
+            modes (iterable): Contains numbers of modes on which to act the op.
             status (bool):
         """
         phase = int(not status)*np.pi

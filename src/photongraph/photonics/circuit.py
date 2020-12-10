@@ -15,12 +15,7 @@ from ..graphs import state_check, graph_state_edges
 class Circuit:
     """Represents a photonic circuit specified by a number of spatial modes.
 
-    Paragraph description
-
-    TODO: Write doc strings!
-
-    Attributes:
-
+    Uses Strawberry Fields (SF) for photonic simulation.
 
     """
 
@@ -28,20 +23,26 @@ class Circuit:
         """
 
         Args:
-            mode_num (int): number of spatial modes
+            mode_num (int): number of modes
         """
         self._mode_num = mode_num
         self._op_reg = {}
         self._cov_matrix = np.array([])
         self._compiled = False
 
+    def __repr__(self):
+        return 'Circuit({})'.format(self._mode_num)
+
+    def __str__(self):
+        return 'Circuit({})'.format(self._mode_num)
+
     @staticmethod
     def __sort_ops(group):
         """
-        Sorts operators which a group by the first mode they act on.
+        Sorts operators which are grouped by the first mode they act on.
 
         Args:
-            group:
+            group (str):
 
         Returns:
             list:
@@ -52,7 +53,7 @@ class Circuit:
             ops_first_modes.append((op, first_mode))
 
         ops_first_modes_sorted = sort_tuples_by_ele(ops_first_modes, 1)
-        new_group = [op for op, f_mode in ops_first_modes_sorted]
+        new_group = [op for op, _ in ops_first_modes_sorted]
 
         return new_group
 
@@ -136,7 +137,7 @@ class Circuit:
 
     def config_op(self, group_id, op_pos, **op_params):
         """
-        This updates the parameters of an op of a particular group in the
+        This updates the parameters of an op in a particular group of the
         operator register.
 
         TODO: Check that the group exists
@@ -185,7 +186,7 @@ class Circuit:
         Args:
 
         Returns:
-            (sf.program):
+            sf.program:
         """
         prog = sf.Program(self._mode_num)
         op_reg = self._op_reg
@@ -224,6 +225,21 @@ class Circuit:
 
         """
         raise NotImplementedError()
+
+    @property
+    def compiled(self):
+        """bool: Status of compilation."""
+        return self._compiled
+
+    @property
+    def mode_num(self):
+        """int: Number modes in circuit."""
+        return self._mode_num
+
+    @property
+    def op_reg(self):
+        """dict: Contains operator register."""
+        return self._op_reg
 
     @property
     def cov_matrix(self):
@@ -277,6 +293,10 @@ class PostGSG(Circuit):
     def run(self, mp=False):
         """
         Determines the logical output state using the covariance matrix
+
+        Todo: Specify qubit/qudit encoding
+        Todo: After calculating all the amplitudes, call the normalise
+              method on StateVector.
 
         Args:
             mp (bool): Use multiprocessing
