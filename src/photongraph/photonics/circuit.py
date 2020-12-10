@@ -7,9 +7,10 @@ import matplotlib.pyplot as plt
 import string
 from ..utils import sort_tuples_by_ele, common_member, \
     qudit_qubit_encoding, logical_fock_states_lists, efficiency_calc, \
-    efficiency_scale_factor
+    efficiency_scale_factor, logical_fock_states, basis_matrix
 from .ops import PPS, Inter
 from ..graphs import state_check, graph_state_edges
+from ..states.statevector import StateVector
 
 
 class Circuit:
@@ -290,284 +291,42 @@ class PostGSG(Circuit):
             self._op_reg[('postFLU', 3)].append(
                 Inter(np.arange(qd*i, qd*(i+1), dtype=int), np.eye(qd)))
 
-    def run(self, mp=False):
+    def run(self, encoding='qubit'):
         """
-        Determines the logical output state using the covariance matrix
-
-        Todo: Specify qubit/qudit encoding
-        Todo: After calculating all the amplitudes, call the normalise
-              method on StateVector.
+        Determines the logical output state using the covariance matrix.
 
         Args:
-            mp (bool): Use multiprocessing
+            encoding (str): Either native qudit encoding or qubit one.
 
         """
         assert self._compiled
+        assert encoding in ['qudit', 'qubit'], \
+            "Encoding must be either 'qudit' or 'qubit'."
 
         qudit_dim = self._qudit_dim
         qudit_num = self._qudit_num
         mode_num = self._mode_num
         cov_matrix = self._cov_matrix
 
-        qudit_basis_states, fock_states = logical_fock_states_lists(qudit_dim,
-                                                                    qudit_num)
-        # Use map to apply calc_amp
-        def calc_amp(fock_state):
-            return twq.pure_state_amplitude(np.zeros(2 * mode_num), cov_matrix,
-                                        fock_state)
+        basis_mat = basis_matrix(qudit_dim, qudit_num)
+        lfs = logical_fock_states(qudit_dim, qudit_num)
+        fock_states = [lfs[tuple(basis_state)][0] for basis_state in basis_mat]
 
-        qudit_state_un = {}
-        for i, qs in enumerate(qudit_basis_states):
-            amp = calc_amp(fock_states[i])
-            if not np.isclose(np.abs(amp), 0):
-                qudit_state_un[qs] = np.round(amp, 10)
+        amps = list(map(lambda fs: twq.pure_state_amplitude(
+            np.zeros(2 * mode_num), cov_matrix, fs), fock_states))
 
-        # normalise the probability amplitudes of the logical states
-        norm_const = np.sqrt(np.sum(np.square(np.abs(np.array(list(qudit_state_un.values()))))))
+        vector = np.array(amps, dtype='complex128')
 
-        qudit_state = {state:amp/norm_const for state, amp in
-                              qudit_state_un.items()}
-
-        self._qudit_state = qudit_state
-
-        qudit_qubit_map = qudit_qubit_encoding(self._qudit_dim,
-                                               self._qudit_num)
-        qubit_state = {qudit_qubit_map[qs]: amp for qs, amp in
-                         self._qudit_state.items()}
-
-        self._qubit_state = qubit_state
-
-    def __postselect_logical_state(self, form, Z_projectors, qudit_perm):
-        """
-
-
-
-            Args:
-                form:
-                Z_projectors (dict):
-                qubit_perm (list): permutes the labels of qubits
-
-            Returns:
-                (dict):
-
-        """
-
-        ps_logical_state_un = {}
-
-        if form == 'qubit':
-            logical_state = self._qubit_state
-            for qs, amp in logical_state.items():
-                if np.all([True if qs[int(q)] == s else False for q, s in
-                           Z_projectors.items()]):
-                    perm_qs = np.array(list(qs))
-                    og_order = list(range(self._qubit_num))
-                    perm_qs[og_order] = perm_qs[qudit_perm]
-                    ps_logical_state_un[tuple(perm_qs)] = amp
-
-        elif form == 'qudit':
-            logical_state = self._qudit_state
-            for qs, amp in logical_state.items():
-                if np.all([True if qs[int(q)] == s else False for q, s in
-                           Z_projectors.items()]):
-                    perm_qs = np.array(list(qs))
-                    og_order = list(range(self._qudit_num))
-                    perm_qs[og_order] = perm_qs[qudit_perm]
-                    ps_logical_state_un[tuple(perm_qs)] = amp
-
-        norm_const = np.sqrt(
-            np.sum(np.square(np.abs(np.array(list(ps_logical_state_un.values()))))))
-
-        ps_logical_state = {state: amp / norm_const for state, amp in
-                       ps_logical_state_un.items()}
-
-        return ps_logical_state
-
-    def __print_state(self, form, logical_state, Z_projectors):
-        """
-
-        Args:
-            state (dict):
-
-        Returns:
-
-        """
-        # print out if the state is a graph state
-        if form == 'qubit':
-            reduced_ps_logical_state = {}
-            for qs, amp in logical_state.items():
-                reduced_qubit_state = tuple([int(q) for i, q in enumerate(qs)
-                                             if i not in Z_projectors.keys()])
-                reduced_ps_logical_state[reduced_qubit_state] = amp
-
-            ps_qubit_num = len(list(reduced_ps_logical_state.keys())[0])
-
-            if state_check(2, ps_qubit_num, reduced_ps_logical_state, "RU"):
-                print("Logical state is a qubit graph state.")
-            else:
-                print("Logical state is NOT a qubit graph state.")
-                print("Number of basis states: ", len(logical_state.keys()),
-                      "/", str(2**len(list(logical_state.items())[0][0])))
-        elif form == 'qudit':
-            d = self._qudit_dim
-            reduced_ps_logical_state = {}
-            for qs, amp in logical_state.items():
-                reduced_qubit_state = tuple([int(q) for i, q in enumerate(qs)
-                                             if i not in Z_projectors.keys()])
-                reduced_ps_logical_state[reduced_qubit_state] = amp
-
-            ps_qudit_num = len(list(reduced_ps_logical_state.keys())[0])
-
-            if state_check(d, ps_qudit_num, reduced_ps_logical_state, "RU"):
-                print("Logical state is a qudit RU state.")
-            else:
-                print("Logical state is NOT a qudit RU state.")
-                print("Number of basis states: ", len(logical_state.keys()),
-                      "/", str(d ** len(list(logical_state.items())[0][0])))
-
-        for state, amp in logical_state.items():
-            state_str = "|" + ''.join(
-                "%s " % ','.join(map(str, str(x))) for x in state)[:-1] + ">"
-
-            amp_str = str(amp)
-
-            print(state_str + "  :  " + amp_str)
-
-    def logical_output_state(self, form="qubit", Z_projectors={},
-                             qudit_perm=None):
-        """
-        Prints out the logical output state in one of two forms, qubit or qudit.
-
-        Args:
-            form (str):
-            Z_projectors (dict):
-            qubit_perm (list): permutes the labels of qubits
-
-        Examples:
-
-        """
-        assert form in ['qubit', 'qudit'], "Logical output must be either " \
-                                           "qubit or qudit."
-
-        if not qudit_perm:
-            if form =="qubit":
-                qudit_perm = list(range(self._qubit_num))
-            elif form =="qudit":
-                qudit_perm = list(range(self._qudit_num))
-
-        ps_logical_state = self.__postselect_logical_state(form, Z_projectors,
-                                                           qudit_perm)
-        self.__print_state(form, ps_logical_state, Z_projectors)
-
-    def display_gs(self, qudit_type_order, form='qubit', Z_projectors={},
-                            inc_ps_qubits=True, label_type="let_num",
-                   qubit_perm=None):
-        """
-        Displays postselected graph state
-
-        Args:
-            qudit_type_order (str): e.g. 'bbrrrrbb'
-            form (str):
-            Z_projectors (dict):
-            inc_ps_qubits (bool):
-            label_type (str): Options 'num', 'let_num', 'cat_num'
-            qubit_perm (list): permutes the labels of qubits
-        """
-        # need to perform checks on form and Z projectors
-
-        qudit_dim = self._qudit_dim
-
-        qubit_num = self._qubit_num
-        non_ps_qubit_num = qubit_num - len(list(Z_projectors.keys()))
-
-        if label_type == "let_num":
-            qudit_letters = [letter for letter in
-                             string.ascii_uppercase[:qubit_num]]
-            qubit_numbers = [str(number) for number in
-                             range(int(np.log2(qudit_dim)))]
-            labels = ['$' + let + num + '$' for let in qudit_letters for num in
-                      qubit_numbers]
-            qubit_labels = {k: labels[k] for k in range(len(labels))}
-            qubit_colours = {i: colour for i, colour in
-                             enumerate(qudit_type_order)}
-
-        elif label_type == "num":
-            qubit_labels = {k: '$' + str(k) + '$' for k in range(qubit_num)}
-            qubit_colours = {k: 'teal' for k in range(qubit_num)}
-
-        elif label_type == "cat_num":
-            qubit_labels = {k: '$' + str(k + 1) + '$' for k in
-                            range(qubit_num)}
-            qubit_colours = {k: 'teal' for k in range(qubit_num)}
-
-        ps_qubit_state = self.__postselect_logical_state(form, Z_projectors,
-                                                         qubit_perm)
-
-        reduced_ps_qubit_state = {}
-        for qs, amp in ps_qubit_state.items():
-            reduced_qubit_state = tuple([q for i, q in enumerate(qs)
-                                         if str(i) not in Z_projectors.keys()])
-            reduced_ps_qubit_state[reduced_qubit_state] = amp
-
-        all_qubits = range(qubit_num)
-        ps_qubits = list(map(int, Z_projectors.keys()))
-        non_ps_qubits = [q for q in all_qubits if q not in ps_qubits]
-
-        ro_qubits = non_ps_qubits + ps_qubits
-        ro_qubits_labels = {i: qubit_labels[v] for i, v in
-                            enumerate(ro_qubits)}
-        ro_qubits_colours = dict(
-            (i, qubit_colours[v]) if v not in ps_qubits else (i, 'grey') for
-            i, v in enumerate(ro_qubits))
-
-        edges = []
-        hyperedges = []
-        for edge in graph_state_edges(2, non_ps_qubit_num, reduced_ps_qubit_state).keys():
-            if len(edge) == 2:
-                edges.append(edge)
-            elif len(edge)>2:
-                # plotting a single Z edge causes plotting problems
-                hyperedges.append(tuple(edge))
-
-        graph = nx.Graph()
-        graph.add_edges_from(edges)
-
-        # Include qubits which don't have any edges
-        if inc_ps_qubits:
-            graph.update(nodes=range(qubit_num))
-        else:
-            graph.update(nodes=range(non_ps_qubit_num))
-            ro_qubits_labels = {k: v for k, v in ro_qubits_labels.items() if
-                                k in range(non_ps_qubit_num)}
-            ro_qubits_colours = {k: v for k, v in ro_qubits_colours.items() if
-                                 k in range(non_ps_qubit_num)}
-
-        fig = plt.figure(1, figsize=(9, 8))
-
-        # generate node positions
-        node_pos = nx.circular_layout(graph)
-
-        nx.draw_networkx(graph, pos=node_pos,
-                         labels=ro_qubits_labels, font_size=12,
-                         node_color=[ro_qubits_colours[i] for i in
-                                     graph.nodes()], node_size=1000,
-                         edgecolors='black', edge_color='black',
-                         font_color='black', width=4, linewidths=3)
-
-
-        hg_nodes = set([q for he in hyperedges for q in he])
-
-        hg_node_pos = {node: pos for node, pos in node_pos.items()
-                            if node in hg_nodes}
-
-        hg_edge_dict = {str(i) + "he-": he for i, he in enumerate(hyperedges)}
-
-        hg = hnx.Hypergraph(hg_edge_dict)
-        #hg._add_nodes_from(list(all_qubits))
-        hnx.draw(hg, pos=hg_node_pos, with_edge_labels=False,
-                 with_node_labels=False,
-                 edges_kwargs={'dr': 0.06, 'linewidth': 3})
-
-        plt.show()
+        if encoding == 'qudit':
+            state_vector = StateVector(qudit_num, qudit_dim, vector)
+            state_vector.normalize()
+            return state_vector
+        elif encoding == 'qubit':
+            qubit_num = int(np.log2(qudit_dim ** qudit_num))
+            qubit_dim = 2
+            state_vector = StateVector(qubit_num, qubit_dim, vector)
+            state_vector.normalize()
+            return state_vector
 
     def coincidence_rate(self, loss_params, fock_states=(),
                          photon_cutoff=1, pulse_rate=0.5*10**9,
