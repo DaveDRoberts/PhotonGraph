@@ -224,6 +224,8 @@ class GraphState:
 
         n = len(self._qudits)
         d = self._qudit_dim
+        qudit_index_map = {q:i for i, q in
+                           enumerate(sorted(tuple(self._qudits)))}
 
         basis_matrix = np.array(list(it.product(*[list(range(d))] * n)))
 
@@ -232,7 +234,8 @@ class GraphState:
         for edge in self._edges.values():
             weight = edge.weight
             qudits = edge.qudits
-            gZ = weight * np.prod(basis_matrix[:, list(qudits)],
+            qudit_indices = [qudit_index_map[q] for q in qudits]
+            gZ = weight * np.prod(basis_matrix[:, qudit_indices],
                                   axis=1).flatten()
 
             new_weights = np.mod(np.add(new_weights, gZ), d)
