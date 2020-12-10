@@ -16,13 +16,6 @@ class GraphState:
     Qudits have arbitrary prime dimension, edges are weighted with an
     integer value module qudit dimension and can have a cardinality >=1.
 
-    Attributes:
-        _qudit_dim (int): Dimension of each qudit.
-        _edges (dict): Each key is a tuple of qubits and value is a Edge object.
-        _qudits (set): Every qudit is denoted by an integer.
-        _incidence_dict (dict): Keys are qudits and values are all the edges
-                                they belong to.
-
     Notes:
         The theory of hypergraphs and transformations is covered in detail in
         Mariami Gachechiladze's thesis: Quantum Hypergraph States and the Theory
@@ -31,13 +24,6 @@ class GraphState:
         There are two key papers on qudit hypergraph states: Qudit Hypergraph
         States - Steinhoff et al and Qudit Hypergraph States and their
         Properties - Xiong et al.
-
-    Todo: Investigate if transformation rules apply to non-prime dimensional
-          qudits.
-
-    Todo: Find a way to make sure that the qudit dimension and
-          weighted_edge_dict are compatible.
-
 
     """
 

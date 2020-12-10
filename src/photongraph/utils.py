@@ -14,7 +14,17 @@ def check_integer(param, min_val=0):
 def basis_matrix(qudit_dim, qudit_num):
     """
         Generates a matrix where the basis states are the rows in canonical
-        order i.e. for n=3 and d=2
+        order.
+
+        Args:
+            qudit_dim (int): Dimension of qudit.
+            qudit_num (int): Number of qudits.
+
+        Returns:
+            numpy.array: A 2D array where every row is a basis state.
+
+        Examples:
+        >>> basis_matrix(2, 3)
         np.array([[0,0,0],
                   [0,0,1],
                   [0,1,0],
@@ -23,17 +33,6 @@ def basis_matrix(qudit_dim, qudit_num):
                   [1,0,1],
                   [1,1,0],
                   [1,1,1]])
-
-        Args:
-            qudit_dim (int);
-            qudit_num (int):
-
-        Returns:
-            numpy.array:
-
-        Examples:
-
-
 
         """
     n = qudit_num
@@ -94,8 +93,8 @@ def logical_fock_states(qudit_dim, qudit_num, photon_cutoff=1):
         photon_cutoff (int): Max number of photons per mode
 
     Returns:
-        (dict): Key is a qudit state and its value is a list of logical Fock states
-                which correspond to that qudit state.
+        dict: Key is a qudit state and its value is a list of logical Fock
+                states which correspond to that qudit state.
 
     Examples:
     >>>logical_fock_states(2,2,2)
@@ -220,7 +219,6 @@ def controlled_qubit_gates(qubit_num, U, U_label):
     """
     Generates all the possible n-qubit controlled-U gates for some single-qubit
     gate, U.
-
 
     Args:
         qubit_num:

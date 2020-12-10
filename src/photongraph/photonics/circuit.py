@@ -1,15 +1,10 @@
 import strawberryfields as sf
 import thewalrus.quantum as twq
 import numpy as np
-import networkx as nx
-import hypernetx as hnx
-import matplotlib.pyplot as plt
-import string
 from ..utils import sort_tuples_by_ele, common_member, \
     qudit_qubit_encoding, logical_fock_states_lists, efficiency_calc, \
     efficiency_scale_factor, logical_fock_states, basis_matrix
 from .ops import PPS, Inter
-from ..graphs import state_check, graph_state_edges
 from ..states.statevector import StateVector
 
 
@@ -43,7 +38,7 @@ class Circuit:
         Sorts operators which are grouped by the first mode they act on.
 
         Args:
-            group (str):
+            group (str): Identifies a group of operators.
 
         Returns:
             list:
@@ -213,20 +208,6 @@ class Circuit:
         self._cov_matrix = circuit_sim.state.cov()
         self._compiled = True
 
-    def draw(self):
-        """
-        Draws a schematic representation of the circuit.
-
-        """
-        raise NotImplementedError()
-
-    def print(self):
-        """
-        Prints out the operator register in a readable way.
-
-        """
-        raise NotImplementedError()
-
     @property
     def compiled(self):
         """bool: Status of compilation."""
@@ -261,35 +242,47 @@ class PostGSG(Circuit):
         self._qubit_num = int(np.log2(qudit_dim ** qudit_num))
         super().__init__(qudit_num*qudit_dim)
         self.__build_op_reg()
-        self._qudit_state = {}
-        self._qubit_state = {}
 
     def __build_op_reg(self):
         """
-        This builds the operator register when an instance is created.
-
+        Builds the operator register when an instance is created.
 
         """
 
-        qn = self._qudit_num
-        qd = self._qudit_dim
+        n = self._qudit_num
+        d = self._qudit_dim
 
         self._op_reg[('sources', 0)] = []
-        for j in range(qn // 2):
-            for i in range(qd):
-                self._op_reg[('sources', 0)].append(PPS((qd*2*j+i, qd*2*j+i+qd)))
+        for j in range(n // 2):
+            for i in range(d):
+                self._op_reg[('sources', 0)].append(PPS((d*2*j+i, d*2*j+i+d)))
 
         self._op_reg[('preFLU', 1)] = []
-        for i in range(qn):
+        for i in range(n):
             self._op_reg[('preFLU', 1)].append(
-                Inter(np.arange(qd*i, qd*(i+1), dtype=int), np.eye(qd)))
+                Inter(np.arange(d*i, d*(i+1), dtype=int), np.eye(d)))
 
         self._op_reg[('fusions', 2)] = []
 
         self._op_reg[('postFLU', 3)] = []
-        for i in range(qn):
+        for i in range(n):
             self._op_reg[('postFLU', 3)].append(
-                Inter(np.arange(qd*i, qd*(i+1), dtype=int), np.eye(qd)))
+                Inter(np.arange(d*i, d*(i+1), dtype=int), np.eye(d)))
+
+    @property
+    def qudit_num(self):
+        """int: Number of qudits."""
+        return self._qudit_num
+
+    @property
+    def qubit_num(self):
+        """int: Number of qubits."""
+        return self._qubit_num
+
+    @property
+    def qudit_dim(self):
+        """int: Dimension of qudits."""
+        return self._qudit_dim
 
     def run(self, encoding='qubit'):
         """
@@ -298,6 +291,8 @@ class PostGSG(Circuit):
         Args:
             encoding (str): Either native qudit encoding or qubit one.
 
+        Returns:
+            StateVector: Logical postselected output state vector.
         """
         assert self._compiled
         assert encoding in ['qudit', 'qubit'], \
