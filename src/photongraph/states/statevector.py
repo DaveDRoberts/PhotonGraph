@@ -1,6 +1,5 @@
 import numpy as np
-
-from ..utils import logical_fock_states, basis_matrix, qudit_qubit_encoding
+from ..utils import basis_matrix
 
 
 class StateVector:
@@ -8,11 +7,6 @@ class StateVector:
     Represents the state vector for a pure multi-qudit state in the
     computational basis. Amplitudes are stored in an array in the canonical
     order e.g. for 2 qubits we have (a_{00}, a_{01}, a_{10}, a_{11}).
-
-    Attributes:
-          _qudit_num (int):
-          _qudit_dim (int):
-          _vector (numpy.array):
 
     """
 
@@ -87,7 +81,7 @@ class StateVector:
         return self._vector
 
     @property
-    def is_normalized(self):
+    def normalized(self):
         """bool: checks if state vector is normalised"""
         return np.isclose(np.sum(np.square(np.abs(self._vector))), 1.0)
 
@@ -171,29 +165,3 @@ class StateVector:
         basis_dict = {tuple(bs): i for i, bs in enumerate(basis_mat)}
 
         self._vector[basis_dict[tuple(basis_state)]] = amp
-
-    def logical_fock_states(self, d_enc, n_enc):
-        """
-        Generates the fock states which correspond to particular logical states
-        for a specified photon encoding.
-
-        Args:
-            d_enc (int): Qudit dimension encoding
-            n_enc (int): Qudit number encoding
-
-        Returns:
-            np.ndarray
-        """
-
-        d = self._qudit_dim
-        n = self._qudit_num
-
-        lfs = logical_fock_states(d_enc, n_enc)
-        qd_qb = qudit_qubit_encoding(d_enc, n_enc)
-        qb_qd = {v: k for k, v in qd_qb.items()}
-
-        fock_states = []
-        for bs in basis_matrix(d, n):
-            fock_states.append(lfs[qb_qd[tuple(bs)]][0])
-
-        return fock_states

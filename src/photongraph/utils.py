@@ -41,36 +41,6 @@ def basis_matrix(qudit_dim, qudit_num):
     return np.array(list(it.product(*[list(range(d))] * n)))
 
 
-def logical_basis(qudit_dim, qudit_num):
-    """
-        Generates all of the logical basis states for a specific qudit
-        dimension and number of qudits.
-
-        Args:
-            qudit_dim (int): Qudit dimension
-            qudit_num (int): Number of qudits
-
-        Returns:
-            (list): A list of tuples where each tuple is a basis state.
-            Elements are in the canonical order.
-
-        Examples:
-        >>>logical_basis(2,2)
-        [(0, 0), (0, 1), (1, 0), (1, 1)]
-
-        >>>logical_basis(4,1)
-        [(0,), (1,), (2,), (3,)]
-    """
-
-    check_integer(qudit_dim, 0)
-    check_integer(qudit_num, 0)
-
-    return [tuple(np.array(list(''.join(i)), dtype=int))
-            for i in it.product(''.join(str(i)
-                                        for i in np.arange(qudit_dim)),
-                                repeat=qudit_num)]
-
-
 def logical_fock_states(qudit_dim, qudit_num, photon_cutoff=1):
     """
     Function to generate all the Fock states which correspond to each
@@ -138,32 +108,6 @@ def logical_fock_states(qudit_dim, qudit_num, photon_cutoff=1):
     return dict(qudit_fock_map)
 
 
-def logical_fock_states_lists(qudit_dim, qudit_num):
-    """
-    Generates all of the Fock states which correspond to logical qudit states
-    and returns two arrays: one for logical qudit states and another for the
-    Fock states.
-
-
-    Args:
-        qudit_dim (int): Qudit dimension
-        qudit_num (int): Number of qudits
-        photon_cutoff (int): Max number of photons per mode
-
-    Returns:
-        tuple(list, list): First list is all of the qudit basis states and the
-        second list contains all of the corresponding Fock states.
-    """
-    lfs = logical_fock_states(qudit_dim, qudit_num)
-    qudit_basis_states = []
-    fock_states = []
-    for qds, fs in lfs.items():
-        qudit_basis_states.append(qds)
-        fock_states.append(fs[0])
-
-    return qudit_basis_states, fock_states
-
-
 def qudit_qubit_encoding(qudit_dim, qudit_num):
     """
     Generates the mapping between qudit and qubit states.
@@ -206,11 +150,11 @@ def qudit_qubit_encoding(qudit_dim, qudit_num):
 
     basis_state_num = qudit_dim ** qudit_num
     qubit_num = int(math.log2(qudit_dim ** qudit_num))
-    qudit_logical_basis = logical_basis(qudit_dim, qudit_num)
-    qubit_logical_basis = logical_basis(2, qubit_num)
+    qudit_lb = basis_matrix(qudit_dim, qudit_num)
+    qubit_lb = basis_matrix(2, qubit_num)
 
-    qudit_to_qubit_map = {qudit_logical_basis[i]: qubit_logical_basis[i] for i
-                          in range(basis_state_num)}
+    qudit_to_qubit_map = {tuple(qudit_lb[i]): tuple(qubit_lb[i])
+                          for i in range(basis_state_num)}
 
     return qudit_to_qubit_map
 

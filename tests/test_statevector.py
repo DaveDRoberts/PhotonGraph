@@ -64,7 +64,7 @@ def test_qudit_num(qudit_num, qudit_dim, vector):
     (3, 4, vector_d4_n3, True)
 ])
 def test_is_normalized(qudit_num, qudit_dim, vector, exp_result):
-    assert StateVector(qudit_num, qudit_dim, vector).is_normalized == exp_result
+    assert StateVector(qudit_num, qudit_dim, vector).normalized == exp_result
 
 
 @pytest.mark.parametrize('qudit_num, qudit_dim, vector', [
@@ -73,7 +73,7 @@ def test_is_normalized(qudit_num, qudit_dim, vector, exp_result):
 def test_normalize(qudit_num, qudit_dim, vector):
     state_vector = StateVector(qudit_num, qudit_dim, vector)
     state_vector.normalize()
-    assert state_vector.is_normalized
+    assert state_vector.normalized
 
 
 @pytest.mark.parametrize('qudit_num, qudit_dim, vector, unitary, exp_result', [

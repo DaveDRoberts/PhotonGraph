@@ -1,8 +1,7 @@
 import strawberryfields as sf
 import thewalrus.quantum as twq
 import numpy as np
-from ..utils import sort_tuples_by_ele, common_member, \
-    qudit_qubit_encoding, logical_fock_states_lists, efficiency_calc, \
+from ..utils import sort_tuples_by_ele, common_member, efficiency_calc, \
     efficiency_scale_factor, logical_fock_states, basis_matrix
 from .ops import PPS, Inter
 from ..states.statevector import StateVector
@@ -324,46 +323,50 @@ class PostGSG(Circuit):
             return state_vector
 
     def coincidence_rate(self, loss_params, fock_states=(),
-                         photon_cutoff=1, pulse_rate=0.5*10**9,
-                         units="s"):
+                         pulse_rate=0.5*10**9, units="s"):
         """
         Calculates the m-fold coincidence rate for a collection of
-        Fock states which which have at least one photon in each subset
-        of modes which corresponds to a qudit.
+        Fock states which have at least one photon in each subset
+        of modes that corresponds to a qudit.
 
-        The concidence rate is given by the sum of Fock state
-        probabilities multiplied by the pulse rate of the laser.
-
-        The Fock states can be specifed instead - this can be a much
-        faster way of determining the m-fold coincidence rate if there
-        are only a few with a non-zero amplitude.
+        The concidence rate is given by the sum of Fock state probabilities
+        multiplied by the pulse rate of the laser. The Fock states can be
+        specifed instead - this can be a much faster way of determining the
+        m-fold coincidence rate if there are only a few with a non-zero
+        amplitude.
 
         Args:
-
+            loss_params (dict): Loss parameters.
+            fock_states (iterable): Fock states to calculate prob amps.
+            pulse_rate (float): Pulse rate of laser in Hz.
+            units (str): Rate units for coincidence detection.
 
         Returns:
-            string: Formatted string displaying coincidence rate
+            string: Formatted string of coincidence rate.
 
         """
+        assert self.compiled, "Circuit must be compiled first."
 
+        qudit_dim = self._qudit_dim
+        qudit_num = self._qudit_num
+        mode_num = self._mode_num
         eta = efficiency_calc(loss_params)
 
         if not fock_states:
-            _, fock_states = logical_fock_states_lists(self._qudit_dim,
-                                                       self._qudit_num)
+            basis_mat = basis_matrix(qudit_dim, qudit_num)
+            lfs = logical_fock_states(qudit_dim, qudit_num)
+            fock_states = [lfs[tuple(basis_state)][0] for basis_state in
+                           basis_mat]
 
         coin_prob = 0.0
         for fock_state in fock_states:
-
-            num_of_modes = len(fock_state)
             prob_amp = twq.pure_state_amplitude(
-                np.zeros(2 * num_of_modes), self._cov_matrix, fock_state)
+                np.zeros(2 * mode_num), self._cov_matrix, fock_state)
             prob = (np.abs(prob_amp)) ** 2
 
             photon_occ = [fock_state[i] for i in
                           np.array(fock_state).nonzero()[0]]
-            scaled_prob = prob * efficiency_scale_factor(photon_occ,
-                                                         eta)
+            scaled_prob = prob * efficiency_scale_factor(photon_occ, eta)
             coin_prob += scaled_prob
 
         coin_rate = pulse_rate * coin_prob
