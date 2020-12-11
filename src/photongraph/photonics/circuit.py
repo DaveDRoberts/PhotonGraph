@@ -52,7 +52,7 @@ class Circuit:
 
         return new_group
 
-    def add_op(self, group_id, op ):
+    def add_op(self, group_id, op):
         """
         This adds an op to the op register.
         This will check each group starting from the first to see if there are
