@@ -230,7 +230,7 @@ class GraphState:
 
         vector = np.round(amp * np.exp(2j * np.pi * new_weights / d), 8)
 
-        return StateVector(n, d, vector)
+        return StateVector(n, d, vector, list(self._qudits))
 
     def adjacency(self, qudit):
         """
