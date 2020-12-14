@@ -70,7 +70,7 @@ def gs_from_sv(state_vector):
 
     n = state_vector.qudit_num
     d = state_vector.qudit_dim
-    qudits = list(range(n))
+    qudits = state_vector.qudits
 
     assert state_vector.normalized, "State vector is not normalized."
 
@@ -117,8 +117,9 @@ def gs_from_sv(state_vector):
             # checks if the basis state has a non-zero weight
             if bm_state_w:
                 new_edge = tuple(np.array(bm_state).nonzero()[0])
+                new_edge_qi = tuple(qudits[q] for q in new_edge)
                 new_edges[new_edge] = bm_state_w
-                edges[new_edge] = bm_state_w
+                edges[new_edge_qi] = bm_state_w
 
         if new_edges:
             for edge, edge_weight in new_edges.items():
@@ -139,3 +140,41 @@ def gs_from_sv(state_vector):
 
     return GraphState(edges, d, qudits)
 
+
+def qubit_stab_strings(stab_gens):
+    """
+    Generates a simple string representation for stabilizer generators
+    of a 2-uniform qubit graph state.
+
+    Each stabilizer generator must consist of X or X operations only
+
+    Args:
+        stab_gens (dict):
+
+    Returns:
+        (list): Contains all of the stabilizer generators as strings
+
+    Todo: Rather than have this as a stand alone function it should be use to
+          override the stab_gens method for teh QubitGraphState class.
+
+    """
+    qubit_num = len(stab_gens.keys())
+    stab_strs = []
+    # create a string of I's
+    for q, stab_gen in stab_gens.items():
+        stab_list = ['I'] * qubit_num
+        ops = ['X', 'Z']
+        for op, qs, w in stab_gen:
+            if (op in ops) and len(qs) == 1 and w == 1:
+                stab_list[qs[0]] = op
+            else:
+                raise Exception("Each operation of the stabilizer " +
+                                "generator should be a tuple of the "
+                                "form (label, qubits, weight) where "
+                                "label is 'X' or 'Z' and len(qubits)==1"
+                                "and weight ==1")
+
+        stab_str = "".join(stab_list)
+        stab_strs.append(stab_str)
+
+    return stab_strs

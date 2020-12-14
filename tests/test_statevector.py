@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 from photongraph.states.statevector import StateVector
-from photongraph.utils import intra_qubit_gate_set
+from photongraph.photonics import intra_qubit_gate_set
 
 vector_d4_n3 = np.array([(0.125 + 0j), (0.125 + 0j), (0.125 + 0j), (0.125 + 0j),
                          (0.125 + 0j), (-0.125 + 0j), (0.125 + 0j),

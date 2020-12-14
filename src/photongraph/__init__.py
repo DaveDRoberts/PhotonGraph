@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-from .photonics.circuit import Circuit, PostGSG
-from .photonics.ops import BS, PS, Inter, Fusion, MZI, PPS
+from .photonics.post_gsg import ParamCircuit, PostGSG, PostGSG4P4D
 from .graphs import GraphState
 from .graphs.gs_utils import gs_from_sv
 from .states.statevector import StateVector

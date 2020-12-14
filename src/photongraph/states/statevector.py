@@ -10,27 +10,32 @@ class StateVector:
 
     """
 
-    def __init__(self, qudit_num, qudit_dim, vector=None):
+    def __init__(self, qudit_num, qudit_dim, vector=None, qudits=None):
         """
 
         Args:
-            vector (numpy.array): Amplitudes of computational basis states
             qudit_num (int): Number of qudits >=1
             qudit_dim (int): Qudit dimension >=2
+            vector (numpy.array): Amplitudes of computational basis states
+            qudits (list[int]): Specifies qudit numbers
         """
-
-        # check that the length of the vector is compatible with the
-        # number of qudits and qudit dimension.
-
-        # make sure the data type of the np array is complex
 
         self._qudit_num = qudit_num
         self._qudit_dim = qudit_dim
 
         if not (vector is None):
-            self._vector = vector
+            assert vector.shape == (qudit_dim**qudit_num,), \
+                'Vector shape incompatible with qudit number and dimension.'
+            self._vector = np.round(vector, 12).astype(np.complex128)
         else:
             self._vector = np.zeros(qudit_dim**qudit_num, dtype=np.complex128)
+
+        if not (qudits is None):
+            assert len(qudits) == qudit_num, \
+                'Specified qudits is incompatible with qudit number.'
+            self._qudits = sorted(set(qudits))
+        else:
+            self._qudits = list(range(qudit_num))
 
     def __repr__(self):
         n = self._qudit_num
@@ -76,6 +81,11 @@ class StateVector:
         return self._qudit_num
 
     @property
+    def qudits(self):
+        """ """
+        return self._qudits
+
+    @property
     def vector(self):
         """numpy.array: 1D Array to hold complex probability amplitudes"""
         return self._vector
@@ -97,7 +107,7 @@ class StateVector:
 
         """
 
-        self._vector = U @ self._vector
+        self._vector = np.round(U @ self._vector, 12)
 
     def inner_product(self, state):
         """
@@ -165,3 +175,42 @@ class StateVector:
         basis_dict = {tuple(bs): i for i, bs in enumerate(basis_mat)}
 
         self._vector[basis_dict[tuple(basis_state)]] = amp
+
+    def measure_Z(self, qudit, state=0):
+        """
+        Performs a computational basis measurement on a qudit.
+
+        Args:
+            qudit (int):
+            state (int):
+
+        Notes:
+            reduced == True -> remove the measured qudit from the state
+            if state == -1 then randomly project selected qudit on to one of the
+            Z eigenstates.
+
+        Todo: Write test for this funciton
+
+        Todo: Implement random state measurement
+
+        """
+
+        d = self._qudit_dim
+        n = self._qudit_num
+
+        assert qudit in self._qudits, 'Invalid qudit.'
+        assert state in list(range(-1, d))
+
+        bm = basis_matrix(d, n)
+        qudit_col = bm[:, self._qudits.index(qudit)]
+        state_col = state*np.ones(qudit_col.shape[0], dtype=int).T
+        m_bs_pos = np.argwhere(qudit_col - state_col == 0).T.flatten()
+
+        new_vector = np.take(self._vector, m_bs_pos)
+
+        self._vector = new_vector
+        self.normalize()
+        self._qudit_num -= 1
+        self._qudits.remove(qudit)
+
+

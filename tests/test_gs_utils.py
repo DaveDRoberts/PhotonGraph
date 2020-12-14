@@ -1,5 +1,6 @@
 import pytest
-from photongraph.graphs.gs_utils import *
+import numpy as np
+from photongraph.graphs.gs_utils import state_check, gs_from_sv
 from photongraph.states.statevector import StateVector
 from photongraph import GraphState
 
