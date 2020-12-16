@@ -98,60 +98,12 @@ s = 1/np.sqrt(2)
 # def test_logical_basis(qudit_dim, qudit_num, exp_result):
 #     assert logical_basis(qudit_dim, qudit_num) == exp_result
 
-
-@pytest.mark.parametrize("qudit_dim, qudit_num, photon_cutoff, exp_result", [
-    (2, 2, 2, {(0, 0): [(1, 0, 1, 0), (1, 0, 2, 0),
-                        (2, 0, 1, 0), (2, 0, 2, 0)],
-               (0, 1): [(1, 0, 0, 1), (1, 0, 0, 2),
-                        (2, 0, 0, 1), (2, 0, 0, 2)],
-               (1, 0): [(0, 1, 1, 0), (0, 1, 2, 0),
-                        (0, 2, 1, 0), (0, 2, 2, 0)],
-               (1, 1): [(0, 1, 0, 1), (0, 1, 0, 2),
-                        (0, 2, 0, 1), (0, 2, 0, 2)]}),
-    (4, 2, 1, {(0, 0): [(1, 0, 0, 0, 1, 0, 0, 0)],
-               (0, 1): [(1, 0, 0, 0, 0, 1, 0, 0)],
-               (0, 2): [(1, 0, 0, 0, 0, 0, 1, 0)],
-               (0, 3): [(1, 0, 0, 0, 0, 0, 0, 1)],
-               (1, 0): [(0, 1, 0, 0, 1, 0, 0, 0)],
-               (1, 1): [(0, 1, 0, 0, 0, 1, 0, 0)],
-               (1, 2): [(0, 1, 0, 0, 0, 0, 1, 0)],
-               (1, 3): [(0, 1, 0, 0, 0, 0, 0, 1)],
-               (2, 0): [(0, 0, 1, 0, 1, 0, 0, 0)],
-               (2, 1): [(0, 0, 1, 0, 0, 1, 0, 0)],
-               (2, 2): [(0, 0, 1, 0, 0, 0, 1, 0)],
-               (2, 3): [(0, 0, 1, 0, 0, 0, 0, 1)],
-               (3, 0): [(0, 0, 0, 1, 1, 0, 0, 0)],
-               (3, 1): [(0, 0, 0, 1, 0, 1, 0, 0)],
-               (3, 2): [(0, 0, 0, 1, 0, 0, 1, 0)],
-               (3, 3): [(0, 0, 0, 1, 0, 0, 0, 1)]}),
-    (8, 1, 1, {(0,): [(1, 0, 0, 0, 0, 0, 0, 0)],
-               (1,): [(0, 1, 0, 0, 0, 0, 0, 0)],
-               (2,): [(0, 0, 1, 0, 0, 0, 0, 0)],
-               (3,): [(0, 0, 0, 1, 0, 0, 0, 0)],
-               (4,): [(0, 0, 0, 0, 1, 0, 0, 0)],
-               (5,): [(0, 0, 0, 0, 0, 1, 0, 0)],
-               (6,): [(0, 0, 0, 0, 0, 0, 1, 0)],
-               (7,): [(0, 0, 0, 0, 0, 0, 0, 1)]})
-])
-def test_logical_fock_states(qudit_dim, qudit_num, photon_cutoff, exp_result):
-    assert logical_fock_states(qudit_dim, qudit_num, photon_cutoff) == \
-           exp_result
+def test_check_integer():
+    pass
 
 
-@pytest.mark.parametrize("qudit_dim, qudit_num, exp_result", [
-    (4, 2, {(0, 0): (0, 0, 0, 0), (0, 1): (0, 0, 0, 1), (0, 2): (0, 0, 1, 0),
-            (0, 3): (0, 0, 1, 1), (1, 0): (0, 1, 0, 0), (1, 1): (0, 1, 0, 1),
-            (1, 2): (0, 1, 1, 0), (1, 3): (0, 1, 1, 1), (2, 0): (1, 0, 0, 0),
-            (2, 1): (1, 0, 0, 1), (2, 2): (1, 0, 1, 0), (2, 3): (1, 0, 1, 1),
-            (3, 0): (1, 1, 0, 0), (3, 1): (1, 1, 0, 1), (3, 2): (1, 1, 1, 0),
-            (3, 3): (1, 1, 1, 1)}),
-    (2, 2, {(0, 0): (0, 0), (0, 1): (0, 1), (1, 0): (1, 0), (1, 1): (1, 1)}),
-    (8, 1, {(0,): (0, 0, 0), (1,): (0, 0, 1), (2,): (0, 1, 0),
-            (3,): (0, 1, 1), (4,): (1, 0, 0), (5,): (1, 0, 1),
-            (6,): (1, 1, 0), (7,): (1, 1, 1)})
-])
-def test_qudit_qubit_encoding(qudit_dim, qudit_num, exp_result):
-    assert qudit_qubit_encoding(qudit_dim, qudit_num) == exp_result
+def basis_matrix():
+    pass
 
 
 @pytest.mark.parametrize("qubit_num, U, U_label, exp_result", [
@@ -237,25 +189,13 @@ def test_controlled_qubit_gates(qubit_num, U, U_label, exp_result):
                            test_result[exp_label].dot(exp_U.T.conj()))
 
 
-def test_intra_qubit_gate_set():
-    pass
-
-
-def test_compile_qudit_LU():
-    pass
-
-
-def test_efficiency_scale_factor():
-    pass
-
-
-def test_loss_dB_to_eff():
-    pass
-
-
-def test_efficiency_calc():
-    pass
-
-
 def test_tensor():
+    pass
+
+
+def test_permute_matrix_rows():
+    pass
+
+
+def test_is_prime():
     pass
