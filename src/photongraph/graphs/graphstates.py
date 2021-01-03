@@ -44,7 +44,7 @@ class GraphState:
         self._edges = {}
         self._qudits = set([q for k in weighted_edge_dict.keys() for q in k])
         self._qudits.update(set(qudits))
-        self._edges = self.__gen_edges(weighted_edge_dict)
+        self._edges = self._gen_edges(weighted_edge_dict)
         self._incidence_dict = {}
         self.__update_inc_dict()
 
@@ -64,7 +64,7 @@ class GraphState:
         return 'GraphState(d = {}, n = {})'.format(self._qudit_dim,
                                                    len(self._qudits))
 
-    def __gen_edges(self, weighted_edge_dict):
+    def _gen_edges(self, weighted_edge_dict):
         """
         Takes in dict where each key is a tuple of qubits and value is the edge
         weight e.g. {(0, 1):1, (2,3):1, (0,1,2):2}.
@@ -99,7 +99,7 @@ class GraphState:
 
         self._incidence_dict = dict(inc_dict)
 
-    def __update_edges(self, new_edges):
+    def _update_edges(self, new_edges):
         """
         Updates the edges by adding new_edges according to the rule: if edge
         already exists add weights modulo qudit_dim otherwise add the edge.
@@ -152,6 +152,23 @@ class GraphState:
 
         return adjacency
 
+    @staticmethod
+    def _check_cardinality(edges):
+        """
+
+        Args:
+            edges:
+
+        Returns:
+            bool:
+        """
+
+        for edge in edges:
+            if edge.cardinality != 2:
+                return False
+
+        return True
+
     @property
     def qudit_dim(self):
         """int: Dimension of each qudit"""
@@ -183,7 +200,7 @@ class GraphState:
         return self._incidence_dict
 
     @property
-    def stab_gens(self):
+    def stabilizer_gens(self):
         """dict: Stabilizer generators of the graph state. Each key is a qudit
         and its value is a list of tuples where each tuple has the form
         ('op label', qudits, weight) e.g. ('X', [0], 1), ('CZ', [1,2], 1).
@@ -202,6 +219,16 @@ class GraphState:
             _stab_gens[qudit] = qudit_stab_gen
 
         return _stab_gens
+
+    @property
+    def stabilizers(self):
+        """
+        Using the stabilizer generators generates all of the stabilisers for the graph state.
+
+        Returns:
+
+        """
+        raise NotImplementedError
 
     @property
     def state_vector(self):
@@ -232,6 +259,18 @@ class GraphState:
 
         return StateVector(n, d, vector, list(self._qudits))
 
+    def adj_matrix(self):
+        """
+        This returns the adjacency matrix of the graph state provided all of the edges have a cardinality of 2.
+
+        Raises:
+            Exception if there are any edges with cardinality not equal to 2.
+
+        Returns:
+
+        """
+        raise NotImplementedError()
+
     def adjacency(self, qudit):
         """
         Returns the adjacency of a qudit.
@@ -244,7 +283,7 @@ class GraphState:
         """
         return self.__qudit_adjacency(qudit)
 
-    def neighbours(self, qudit):
+    def neighbourhood(self, qudit):
         """
         Returns the neighbours of a qudit.
 
@@ -269,8 +308,8 @@ class GraphState:
                                 weight.
 
         """
-        new_edges = self.__gen_edges(weighted_edge_dict)
-        self.__update_edges(new_edges)
+        new_edges = self._gen_edges(weighted_edge_dict)
+        self._update_edges(new_edges)
 
     def EPC(self, qudit):
         """
@@ -332,7 +371,7 @@ class GraphState:
             new_edge = e1.edge_union(e2)
             new_edges[new_edge.qudits] = new_edge
 
-        self.__update_edges(new_edges)
+        self._update_edges(new_edges)
 
     def pivot(self, qudit_a, qudit_b):
         """
@@ -400,7 +439,7 @@ class GraphState:
             new_edge = Edge(new_qudits, new_weight, d)
             new_edges[new_qudits] = new_edge
 
-        self.__update_edges(new_edges)
+        self._update_edges(new_edges)
 
     def measure_X(self, qudit, adj_qudit, state=0):
         """
@@ -417,7 +456,7 @@ class GraphState:
             state==-1 then state is chosen randomly.
 
         """
-        return NotImplementedError()
+        raise NotImplementedError()
 
     def measure_Y(self, qudit, state=0):
         """
@@ -430,7 +469,7 @@ class GraphState:
 
         """
 
-        return NotImplementedError()
+        raise NotImplementedError()
 
     def measure_Z(self, qudit, state=0):
         """
@@ -460,7 +499,7 @@ class GraphState:
             edge.mul_weight(state)
             new_edges[edge.qudits] = edge
 
-        self.__update_edges(new_edges)
+        self._update_edges(new_edges)
         self._qudits.remove(qudit)
 
     def fusion(self, gs, qudit_a, qudit_b):
@@ -542,3 +581,128 @@ class GraphState:
                  with_node_labels=False,
                  edges_kwargs={'dr': 0.06, 'linewidth': 3},
                  edge_labels_kwargs={}, label_alpha=1)
+
+
+class QubitGraphState(GraphState):
+    """
+    Subclass for qubit graph states i.e. qudits of dimension 2
+
+    Note that methods stabilizer_gens_strings, nx_graph and graph_hash only apply for
+    graph states where every edge has a cardinality of 2.
+
+    """
+
+    def __init__(self, edge_list, qubits=()):
+        """
+
+        """
+
+        weighted_edge_dict = {}
+        for edge in edge_list:
+            weighted_edge_dict[edge] = 1
+        super().__init__(weighted_edge_dict, qudit_dim=2, qudits=qubits)
+
+    def __repr__(self):
+        return 'QubitGraphState(n = {})'.format(len(self._qudits))
+
+    def __str__(self):
+        return 'QubitGraphState(n = {})'.format(len(self._qudits))
+
+    def add_edges(self, edge_list):
+        """
+        Adds edges to graph state.
+
+        Args:
+            edge_list:
+
+        Returns:
+
+        """
+        weighted_edge_dict = {}
+        for edge in edge_list:
+            weighted_edge_dict[edge] = 1
+        new_edges = super()._gen_edges(weighted_edge_dict)
+        super()._update_edges(new_edges)
+
+    @property
+    def qubit_num(self):
+        """int: Number of qubits in graph state"""
+        return int(len(self._qudits))
+
+    @property
+    def qubits(self):
+        """set: Contains all qubits in the graph state."""
+        return self._qudits
+
+    def stabilizer_gens_strings(self):
+        """dict: Stabilizer generators of the graph state. Each key is a qudit
+        and its value is a list of tuples where each tuple has the form
+        ('op label', qudits, weight) e.g. ('X', [0], 1), ('CZ', [1,2], 1).
+
+        Same as base class except there is the option to return stabilizer generators as strings provided all edges
+        have a cardinality of 2.
+
+        Note: Qubits are labelled left to right the opposite convention for Qiskit!
+
+        """
+        assert self._check_cardinality(self.edges), "All edges must have a cardinality of 2."
+
+        stab_gens = super().stabilizer_gens
+        qubit_num = len(stab_gens.keys())
+        stab_strs = []
+        # create a string of I's
+        for q, stab_gen in stab_gens.items():
+            stab_list = ['I'] * qubit_num
+            ops = ['X', 'Z']
+            for op, qs, w in stab_gen:
+                if (op in ops) and len(qs) == 1 and w == 1:
+                    stab_list[qs[0]] = op
+                else:
+                    raise Exception("Each operation of the stabilizer " +
+                                    "generator should be a tuple of the "
+                                    "form (label, qubits, weight) where "
+                                    "label is 'X' or 'Z' and len(qubits)==1"
+                                    "and weight ==1")
+
+            stab_str = "".join(stab_list)
+            stab_strs.append(stab_str)
+
+        return stab_strs
+
+    def nx_graph(self):
+        """
+        Generates a NetworkX graph.
+
+        Raises:
+             Exception if graph state contains edges with cardinality not equal to 2.
+
+        Returns:
+
+        """
+        assert self._check_cardinality(self.edges), "All edges must have a cardinality of 2."
+
+        _nx_graph = nx.Graph()
+        for edge in self.edges:
+            eq = tuple(edge.qudits)
+            _nx_graph.add_edge(eq[0], eq[1])
+
+        _nx_graph.update(nodes=self.qubits)
+
+        return _nx_graph
+
+    def graph_hash(self):
+        """
+        Will use the GSC and Pynauty python packages to generate a hash for the graph state
+        Raises:
+             Exception if graph state contains edges with cardinality not equal to 2.
+
+        Returns:
+
+        """
+
+        # return hash_graph(self.nx_graph())
+        raise NotImplementedError()
+
+
+
+

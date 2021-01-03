@@ -10,7 +10,7 @@ class StateVector:
 
     """
 
-    def __init__(self, qudit_num, qudit_dim, vector=None, qudits=None):
+    def __init__(self, qudit_num, qudit_dim, vector=None, qudits=None, qudit_order_rev=False):
         """
 
         Args:
@@ -33,9 +33,9 @@ class StateVector:
         if not (qudits is None):
             assert len(qudits) == qudit_num, \
                 'Specified qudits is incompatible with qudit number.'
-            self._qudits = sorted(set(qudits))
+            self._qudits = sorted(set(qudits), reverse=qudit_order_rev)
         else:
-            self._qudits = list(range(qudit_num))
+            self._qudits = sorted(list(range(qudit_num)), reverse=qudit_order_rev)
 
     def __repr__(self):
         n = self._qudit_num

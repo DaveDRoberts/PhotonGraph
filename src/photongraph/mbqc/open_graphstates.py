@@ -1,26 +1,22 @@
-from ..graphs.graphstates import GraphState
+from ..graphs.graphstates import QubitGraphState
 
 
-class OpenGraphState(GraphState):
+class OpenGraphState(QubitGraphState):
     """
     Represents an open graph state which is simply a graph state where some
-    qudits have been assigned to be input or output qudits. Further, each qudit
+    qudits have been assigned to be input or output qubits. Further, each qubit
     (except exclusively output) is assigned a measurement angle (0 - 2*pi) and
     plane (XY, XZ, YZ).
 
-    Notes:
-        Only works for qubits (qudits pf dimension 2) at the moment.
-
     """
-    def __init__(self, weighted_edge_dict, qudit_dim=2, qudits=()):
+    def __init__(self, edge_list, qubits=()):
         """
 
         Args:
-            weighted_edge_dict:
-            qudit_dim:
-            qudits:
+            edge_list:
+            qubits:
         """
-        super().__init__(weighted_edge_dict, qudit_dim=2, qudits=())
+        super().__init__(edge_list, qubits=())
         self._inputs = set()
         self._outputs = set()
         self._meas_planes = dict()
