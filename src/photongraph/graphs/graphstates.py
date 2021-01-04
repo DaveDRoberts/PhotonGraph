@@ -669,6 +669,7 @@ class QubitGraphState(GraphState):
 
         return stab_strs
 
+    @property
     def nx_graph(self):
         """
         Generates a NetworkX graph.
