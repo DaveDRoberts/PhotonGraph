@@ -13,6 +13,10 @@ def flow(og_state):
         og_state (OpenGraphState):
 
     Returns:
+        dict, dict, int
+
+    Todo: Write some assert statements to validate input
+    Todo: this function needs to fo into the OpenGraphState class
 
     """
 

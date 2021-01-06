@@ -66,6 +66,8 @@ def gs_from_sv(state_vector):
         AssertionError: If RU_check.any() == True
         AssertionError: If state vector is not a graph state
 
+    Todo: If qudit_dim==2 then create a QubitGraphState
+
     """
 
     n = state_vector.qudit_num

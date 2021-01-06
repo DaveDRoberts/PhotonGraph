@@ -1,4 +1,5 @@
 from ..graphs.graphstates import QubitGraphState
+from .flows import flow
 
 
 class OpenGraphState(QubitGraphState):
@@ -73,12 +74,62 @@ class OpenGraphState(QubitGraphState):
 
         return NotImplementedError
 
-    def draw(self, with_flow=False):
+    def draw(self, ax=None, with_flow=False, animation=False, save_fig=False):
         """
+        This method is similar to that from the super class except qubits are drawn
+        as a grid with all input qubits on the left and all output qubits on the right.
+        If a qubit is both an input and output then it is put with the output qubits.
+
+        Label each non-output qubit with measurement angle and plane.
+
+        Qubit shape code:
+            Input - Square
+            Output  - Octogon
+            Input/Output  - Square+octgon
+            Auxillary - Circle
+
+        Flow colour code:
+            Purple arrow from qubit to its correction qubit(s).
+            Grey dashed "hyper-edge" to encompass all qubits in the same measurement round
+            and labelled with round number.
+
+        If animation, then a matplotlib animation is generated which illustrates the sequence of measurement rounds.
+        Note that in general, qubit measurements will not
 
         Args:
+            ax (matplotlib.ax):
             with_flow (bool):
+            animation (bool):
 
         """
 
         return NotImplementedError
+
+    def zx_diagram(self):
+        """
+
+        Returns:
+
+        """
+
+        raise NotImplementedError
+
+    def qc_qiskit(self):
+        """
+        Generates the corresponding quantum circuit for qiskit.
+
+        Returns:
+
+        """
+
+        raise NotImplementedError()
+
+    def qc_cirq(self):
+        """
+        Generates the corresponding quantum circuit for qiskit.
+
+        Returns:
+
+        """
+
+        raise NotImplementedError()

@@ -199,7 +199,6 @@ class GraphState:
         """
         return self._incidence_dict
 
-    @property
     def stabilizer_gens(self):
         """dict: Stabilizer generators of the graph state. Each key is a qudit
         and its value is a list of tuples where each tuple has the form
@@ -220,7 +219,6 @@ class GraphState:
 
         return _stab_gens
 
-    @property
     def stabilizers(self):
         """
         Using the stabilizer generators generates all of the stabilisers for the graph state.
@@ -230,7 +228,6 @@ class GraphState:
         """
         raise NotImplementedError
 
-    @property
     def state_vector(self):
         """pg.StateVector: Returns the state vector associated with the graph
         state."""
@@ -635,14 +632,12 @@ class QubitGraphState(GraphState):
         return self._qudits
 
     def stabilizer_gens_strings(self):
-        """dict: Stabilizer generators of the graph state. Each key is a qudit
-        and its value is a list of tuples where each tuple has the form
-        ('op label', qudits, weight) e.g. ('X', [0], 1), ('CZ', [1,2], 1).
+        """Stabilizer generators of the graph state as a list of strings.
 
-        Same as base class except there is the option to return stabilizer generators as strings provided all edges
-        have a cardinality of 2.
+        Returns:
+            list: Each element is a string of Xs and Zs which defines a stabilizer generator of the graph state.
 
-        Note: Qubits are labelled left to right the opposite convention for Qiskit!
+        Note: Qubits are labelled left to right.
 
         """
         assert self._check_cardinality(self.edges), "All edges must have a cardinality of 2."
@@ -669,7 +664,6 @@ class QubitGraphState(GraphState):
 
         return stab_strs
 
-    @property
     def nx_graph(self):
         """
         Generates a NetworkX graph.
@@ -678,6 +672,7 @@ class QubitGraphState(GraphState):
              Exception if graph state contains edges with cardinality not equal to 2.
 
         Returns:
+            nx.Graph: NetworkX graph corresponding to graph state.
 
         """
         assert self._check_cardinality(self.edges), "All edges must have a cardinality of 2."
@@ -702,6 +697,16 @@ class QubitGraphState(GraphState):
         """
 
         # return hash_graph(self.nx_graph())
+        raise NotImplementedError()
+
+    def zx_diagram(self):
+        """
+
+
+        Returns:
+
+        """
+
         raise NotImplementedError()
 
 

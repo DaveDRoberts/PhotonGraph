@@ -8,6 +8,9 @@ class StateVector:
     computational basis. Amplitudes are stored in an array in the canonical
     order e.g. for 2 qubits we have (a_{00}, a_{01}, a_{10}, a_{11}).
 
+    As default, Qudits are labelled in ascending order, from left to right,
+    this is the opposite convention to qiskit.
+
     """
 
     def __init__(self, qudit_num, qudit_dim, vector=None, qudits=None, qudit_order_rev=False):
