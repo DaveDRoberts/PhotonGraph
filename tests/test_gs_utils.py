@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 from photongraph.graphs.gs_utils import state_check, gs_from_sv
 from photongraph.states.statevector import StateVector
-from photongraph import GraphState
+from photongraph import GraphState, QubitGraphState
 
 vector_d3_n3_gp = np.array([0.1360827635 + 0.1360827635j,
                             0.1360827635 + 0.1360827635j,
@@ -145,8 +145,12 @@ def test_state_check(n, d, vector, check_type, exp_result):
     (3, 4, vector_d4_n3, {(1, 2): 2, (0, 1): 1, (0, 1, 2): 3}),
     (4, 2, vector_d2_n4, {(2, 3): 1, (1, 3): 1, (1, 2): 1, (0, 1): 1})])
 def test_gs_from_sv(n, d, vector, weighted_edge_dict):
-    assert gs_from_sv(StateVector(n, d, vector)) == \
-           GraphState(weighted_edge_dict, d)
+    if d == 2:
+        assert gs_from_sv(StateVector(n, d, vector)) == \
+               QubitGraphState(weighted_edge_dict, d)
+    else:
+        assert gs_from_sv(StateVector(n, d, vector)) == \
+               GraphState(weighted_edge_dict, d)
 
 
 @pytest.mark.parametrize("n, d, vector, exception", [

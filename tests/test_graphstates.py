@@ -1,6 +1,6 @@
 import pytest
 from collections import defaultdict
-from photongraph.graphs.graphstates import GraphState
+from photongraph.graphs.graphstates import GraphState, QubitGraphState
 from photongraph.graphs.edges import Edge
 from photongraph.states.statevector import StateVector
 import numpy as np
@@ -626,8 +626,8 @@ def test_incidence_dict(edge_dict, qudit_dim):
     (edge_dict_d3_n4, 3, stab_gens_d3_n4),
     (edge_dict_d5_n4, 5, stab_gens_d5_n4),
 ])
-def test_stab_gens(edge_dict, qudit_dim, exp_result):
-    assert GraphState(edge_dict, qudit_dim).stab_gens == exp_result
+def test_stabilizer_gens(edge_dict, qudit_dim, exp_result):
+    assert GraphState(edge_dict, qudit_dim).stabilizer_gens() == exp_result
 
 
 @pytest.mark.parametrize('edge_dict, qudit_dim, qudit_num, vector', [
@@ -637,7 +637,7 @@ def test_stab_gens(edge_dict, qudit_dim, exp_result):
     (edge_dict_d5_n4, 5, 4, vector_d5_n4),
 ])
 def test_state_vector(edge_dict, qudit_dim, qudit_num, vector):
-    assert GraphState(edge_dict, qudit_dim).state_vector \
+    assert GraphState(edge_dict, qudit_dim).state_vector() \
            == StateVector(qudit_num, qudit_dim, vector)
 
 
@@ -654,58 +654,96 @@ def test_adjacency(edge_dict, qudit_dim, qudit, exp_result):
     assert GraphState(edge_dict, qudit_dim).adjacency(qudit) == exp_result
 
 
-@pytest.mark.parametrize('edge_dict, qudit_dim, edges_to_add, new_edges', [
+@pytest.mark.parametrize('edge_dict, qudit_dim, edges_to_add, new_edge_dict', [
     (edge_dict_d2_n7, 2, {(1, 2, 6): 1, (0, 2, 4, 5): 1, (2, 6): 1},
      edge_dict_d2_n7_add),
     (edge_dict_d5_n4, 5, {(1, 2): 2, (0, 2, 1): 4}, edge_dict_d5_n4_add),
 ])
-def test_add_edges(edge_dict, qudit_dim, edges_to_add, new_edges):
-    gs = GraphState(edge_dict, qudit_dim)
-    gs.add_edges(edges_to_add)
-    gs2 = GraphState(new_edges, qudit_dim)
-    print(gs.edges)
-    print(gs2.edges)
-    assert gs == gs2
+def test_add_edges(edge_dict, qudit_dim, edges_to_add, new_edge_dict):
+
+    if qudit_dim == 2:
+        edge_list = [edge for edge in edge_dict.keys()]
+        new_edge_list = [edge for edge in new_edge_dict.keys()]
+        edges_to_add_list = [edge for edge in edges_to_add.keys()]
+        gs = QubitGraphState(edge_list)
+        gs.add_edges(edges_to_add_list)
+        assert gs == QubitGraphState(new_edge_list)
+    else:
+        gs = GraphState(edge_dict, qudit_dim)
+        gs.add_edges(edges_to_add)
+        assert gs == GraphState(new_edge_dict, qudit_dim)
 
 
-@pytest.mark.parametrize('edge_dict, qudit_dim, qudit, new_edges', [
+@pytest.mark.parametrize('edge_dict, qudit_dim, qudit, new_edge_dict', [
     (edge_dict_d2_n7, 2, 3, edge_dict_d2_n7_epc),
     (edge_dict_d5_n4, 5, 3, edge_dict_d5_n4_epc),
 ])
-def test_EPC(edge_dict, qudit_dim, qudit, new_edges):
-    gs = GraphState(edge_dict, qudit_dim)
-    gs.EPC(qudit)
-    assert gs == GraphState(new_edges, qudit_dim)
+def test_EPC(edge_dict, qudit_dim, qudit, new_edge_dict):
+
+    if qudit_dim == 2:
+        edge_list = [edge for edge in edge_dict.keys()]
+        new_edge_list = [edge for edge in new_edge_dict.keys()]
+        gs = QubitGraphState(edge_list)
+        gs.EPC(qudit)
+        assert gs == QubitGraphState(new_edge_list)
+    else:
+        gs = GraphState(edge_dict, qudit_dim)
+        gs.EPC(qudit)
+        assert gs == GraphState(new_edge_dict, qudit_dim)
 
 
-@pytest.mark.parametrize('edge_dict, qudit_dim, qudit_a, qudit_b, new_edges', [
+@pytest.mark.parametrize('edge_dict, qudit_dim, qudit_a, qudit_b, new_edge_dict', [
     (edge_dict_d2_n7, 2, 0, 3, edge_dict_d2_n7_pivot),
     (edge_dict_d5_n4, 5, 3, 0, edge_dict_d5_n4_pivot),
 ])
-def test_pivot(edge_dict, qudit_dim, qudit_a, qudit_b, new_edges):
-    gs = GraphState(edge_dict, qudit_dim)
-    gs.pivot(qudit_a, qudit_b)
-    assert gs == GraphState(new_edges, qudit_dim)
+def test_pivot(edge_dict, qudit_dim, qudit_a, qudit_b, new_edge_dict):
+
+    if qudit_dim == 2:
+        edge_list = [edge for edge in edge_dict.keys()]
+        new_edge_list = [edge for edge in new_edge_dict.keys()]
+        gs = QubitGraphState(edge_list)
+        gs.pivot(qudit_a, qudit_b)
+        assert gs == QubitGraphState(new_edge_list)
+    else:
+        gs = GraphState(edge_dict, qudit_dim)
+        gs.pivot(qudit_a, qudit_b)
+        assert gs == GraphState(new_edge_dict, qudit_dim)
 
 
-@pytest.mark.parametrize('edge_dict, qudit_dim, qudit, m, new_edges', [
+@pytest.mark.parametrize('edge_dict, qudit_dim, qudit, m, new_edge_dict', [
     (edge_dict_d3_n4, 3, 2, 2, edge_dict_d3_n4_em),
     (edge_dict_d5_n4, 5, 0, 3, edge_dict_d5_n4_em),
 ])
-def test_EM(edge_dict, qudit_dim, qudit, m, new_edges):
-    gs = GraphState(edge_dict, qudit_dim)
-    gs.EM(qudit, m)
-    assert gs == GraphState(new_edges, qudit_dim)
+def test_EM(edge_dict, qudit_dim, qudit, m, new_edge_dict):
+
+    if qudit_dim == 2:
+        edge_list = [edge for edge in edge_dict.keys()]
+        new_edge_list = [edge for edge in new_edge_dict.keys()]
+        gs = QubitGraphState(edge_list)
+        gs.EM(qudit, m)
+        assert gs == QubitGraphState(new_edge_list)
+    else:
+        gs = GraphState(edge_dict, qudit_dim)
+        gs.EM(qudit, m)
+        assert gs == GraphState(new_edge_dict, qudit_dim)
 
 
-@pytest.mark.parametrize('edge_dict, qudit_dim, targ, ctrls, new_edges', [
+@pytest.mark.parametrize('edge_dict, qudit_dim, targ, ctrls, new_edge_dict', [
     (edge_dict_d2_n7, 2, 0, {3, 4}, edge_dict_d2_n7_cp),
     (edge_dict_d3_n4, 3, 1, {3}, edge_dict_d3_n4_cp),
 ])
-def test_ctrl_perm(edge_dict, qudit_dim, targ, ctrls, new_edges):
-    gs = GraphState(edge_dict, qudit_dim)
-    gs.ctrl_perm(targ, ctrls)
-    assert gs == GraphState(new_edges, qudit_dim)
+def test_ctrl_perm(edge_dict, qudit_dim, targ, ctrls, new_edge_dict):
+
+    if qudit_dim == 2:
+        edge_list = [edge for edge in edge_dict.keys()]
+        new_edge_list = [edge for edge in new_edge_dict.keys()]
+        gs = QubitGraphState(edge_list)
+        gs.ctrl_perm(targ, ctrls)
+        assert gs == QubitGraphState(new_edge_list)
+    else:
+        gs = GraphState(edge_dict, qudit_dim)
+        gs.ctrl_perm(targ, ctrls)
+        assert gs == GraphState(new_edge_dict, qudit_dim)
 
 
 def test_measure_X():
@@ -724,9 +762,17 @@ def test_measure_Y():
     (edge_dict_d3_n4, 3, 0, 2, {(2, 3): 1, (1, 2, 3): 2, (1,): 1}),
 ])
 def test_measure_Z(edge_dict, qudit_dim, qudit, state, new_edge_dict):
-    gs = GraphState(edge_dict, qudit_dim)
-    gs.measure_Z(qudit, state)
-    assert gs == GraphState(new_edge_dict, qudit_dim)
+
+    if qudit_dim == 2:
+        edge_list = [edge for edge in edge_dict.keys()]
+        new_edge_list = [edge for edge in new_edge_dict.keys()]
+        gs = QubitGraphState(edge_list)
+        gs.measure_Z(qudit, state)
+        assert gs == QubitGraphState(new_edge_list)
+    else:
+        gs = GraphState(edge_dict, qudit_dim)
+        gs.measure_Z(qudit, state)
+        assert gs == GraphState(new_edge_dict, qudit_dim)
 
 
 def test_fusion():
