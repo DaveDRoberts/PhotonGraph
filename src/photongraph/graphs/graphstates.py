@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 import hypernetx as hnx
+import qiskit
 
 from .edges import Edge
 from ..states.statevector import StateVector
@@ -701,7 +702,47 @@ class QubitGraphState(GraphState):
 
     def zx_diagram(self):
         """
+        Generates a ZX diagram corresponding to the graph state.
 
+        Returns:
+
+        """
+
+        raise NotImplementedError()
+
+    def qc_qiskit(self):
+        """
+        Generates a qiskit quantum circuit corresponding to the graph state.
+
+        1) initialise a quantum register with number of qubits in the graph state
+        2) apply H gates to all qubits
+        3) apply CkZ gates for each (k-1)-edge in graph state - the order doesn't matter
+
+        Returns:
+            qiskit.QuantumCircuit
+
+        """
+        q_reg = qiskit.QuantumRegister(self.qubit_num)
+        qc = qiskit.QuantumCircuit(q_reg)
+
+        for i in range(self.qubit_num):
+            qc.h(i)
+
+        for edge in self.edges:
+            if edge.cardinality == 1:
+                qc.z(edge.qudits)
+            if edge.cardinality == 2:
+                qubits = list(edge.qudits)
+                qc.cz(*qubits)
+            else:
+                qubits = list(edge.qudits)
+                qc.mcp(np.pi, qubits[:-1], qubits[-1])
+
+        return qc
+
+    def qc_cirq(self):
+        """
+        Generates the corresponding quantum circuit for qiskit.
 
         Returns:
 

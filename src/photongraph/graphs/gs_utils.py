@@ -2,7 +2,7 @@ import numpy as np
 import itertools as it
 from collections import defaultdict
 
-from .graphstates import GraphState
+from .graphstates import GraphState, QubitGraphState
 from ..states.statevector import StateVector
 from ..utils import basis_matrix
 
@@ -65,8 +65,6 @@ def gs_from_sv(state_vector):
         AssertionError: If equal_sup_check == False
         AssertionError: If RU_check.any() == True
         AssertionError: If state vector is not a graph state
-
-    Todo: If qudit_dim==2 then create a QubitGraphState
 
     """
 
@@ -139,8 +137,11 @@ def gs_from_sv(state_vector):
 
         if k > n:
             assert 1 == 0, "State vector is NOT a graph state."
-
-    return GraphState(edges, d, qudits)
+    if d ==2:
+        edge_list = list(edges.keys())
+        return QubitGraphState(edge_list, qudits)
+    else:
+        return GraphState(edges, d, qudits)
 
 
 def qubit_stab_strings(stab_gens):

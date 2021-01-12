@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 from .photonics.post_gsg import ParamCircuit, PostGSG, PostGSG4P4D
-from .graphs import GraphState
+from .graphs import GraphState, QubitGraphState
 from .graphs.gs_utils import gs_from_sv
 from .states.statevector import StateVector
 from . import utils
 from pkg_resources import get_distribution, DistributionNotFound
+from .mbqc import OpenGraphState
 
 try:
     # Change here if project is renamed and does not equal the package name
