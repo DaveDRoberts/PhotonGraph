@@ -52,11 +52,13 @@ class StateVector:
         state_str = ""
         for i, basis_state in enumerate(basis_matrix(d, n)):
             amp = self._vector[i]
+            amp_mod = float(np.round(abs(amp), 8))
+            amp_phase = float(np.round(np.angle(amp) / np.pi, 8))
             if not np.isclose(np.abs(amp), 0):
                 basis_state_str = \
                     "|" + ''.join("%s " % ','.join(map(str, str(x)))
                                   for x in basis_state)[:-1] + ">"
-                amp_str = str(amp) + "\n"
+                amp_str = f'{amp_mod:.8f} exp(i {amp_phase: .8f} pi) ' + "\n"
                 state_str += basis_state_str + " : " + amp_str
 
         if state_str:
